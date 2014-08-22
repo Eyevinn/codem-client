@@ -7,6 +7,10 @@
   "bin": {
     "codem-watcher": "./bin/codem-watcher"
   }
-  "dependencies": {},
+  "dependencies": {
+    "chokidar": ">= 0.8.4",
+    "request": ">= 2.40.0",
+    "xmlbuilder": "2.4.3",  
+  },
   "engines": "*"
 }
