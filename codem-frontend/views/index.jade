@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  header
+    h1= title
+  .container
+    .sidebar
+      h2 Available slots
+      p #{status.free_slots} of #{status.max_slots}
+    .main-content
+      h2 Transcoder Jobs
+      if status.jobs.length
+        table
+          thead
+            tr 
+              th Status
+              th Job ID
+              th Duration
+              th Message
+              th Progress
+          tbody
+            each job, i in status.jobs
+              tr
+                td= job.status
+                td= job.id.trunc(10)
+                td #{job.duration} sec
+                td= job.message
+                td #{job.percentage} %
+      else
+        p No active transcoder jobs
+  footer
+    p Developed by Eyevinn
