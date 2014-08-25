@@ -1,9 +1,11 @@
 {
   "name": "codem-frontend",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.0.2",
   "scripts": {
     "start": "node ./bin/www"
+  },
+  "bin": {
+    "codem-frontend": "./bin/codem-frontend"
   },
   "dependencies": {
     "express": "~4.2.0",
