@@ -3,7 +3,9 @@
 ## Description
 Codem-watcher is a program that monitors a folder for new MP4 files and transcode the
 file into multiple files each with different bitrates. The transcoding is performed by
-[codem-transcode](www.transcodem.com).
+[codem-transcode](www.transcodem.com). The resulting files are copied to the specified
+destination folder and a SMIL file are created. These files can then be delivered
+by for example a Wowza Streaming Engine.
 
 ## Installation
 Recommended installation procedure is to use [npm](npmjs.org):
