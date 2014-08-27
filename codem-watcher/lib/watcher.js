@@ -105,7 +105,9 @@ function importfile(path, srcdata) {
 
       var destfilepath = destpath + srcname + "/";
       if (!fs.existsSync(destfilepath)) {
-        fs.mkdirSync(destfilepath);
+        if(!opts['--dry-run']) {
+          fs.mkdirSync(destfilepath);
+        }
       }
 
       for (key in profile) {
