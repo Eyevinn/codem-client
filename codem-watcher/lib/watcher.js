@@ -42,9 +42,11 @@ watcher
 
     probe(path, function(err, probedata) {
       var srcdata = {
-        "title": probedata['metadata']['title'],
         "ext": probedata['fileext']  
       };
+      if (probedata['metadata']) {
+        srcdata['title'] = probedata['metadata']['title'];
+      }
       for (i = 0; i < probedata['streams'].length; i++) {
         var stream = probedata['streams'][i];
         if (stream['codec_type'] == 'video') {
@@ -53,6 +55,9 @@ watcher
           srcdata['videobitrate'] = stream['bit_rate'];
         } else if (stream['codec_type'] == 'audio') {
           srcdata['audiobitrate'] = stream['bit_rate'];
+        }
+        if (opts['--dry-run']) {
+          console.log(srcdata);
         }
       }
       importfile(path, srcdata);
@@ -103,7 +108,7 @@ function importfile(path, srcdata) {
       }
 
       var root = builder.create('smil', {version: '1.0', encoding: 'UTF-8', standalone: true}); 
-      root.att('title', srcdata['title']);
+      root.att('title', srcdata['title']||srcname);
 
       var rootsw = root.ele('body').ele('switch');
       var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': origdest});
