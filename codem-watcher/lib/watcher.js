@@ -25,28 +25,47 @@ THE SOFTWARE.
 var config = require('./config').load();
 var chokidar = require('chokidar');
 var watcher = chokidar.watch(config['watchfolder'], {ignored: /[\/\\]\./, persistent: true, ignoreInitial: true});
+var opts = require('argsparser').parse();
 
 var destpath = config['destination'];
 var transcoderapi = config['transcoderapi'];
 
 var builder = require('xmlbuilder');
-var fs = require('fs');
+var fs = require('fs-extra');
 var request = require('request');
 var profile = config['profile'];
+var probe = require('node-ffprobe');
 
 watcher
   .on('add', function(path) {
     console.log("ADD", path);
-    importfile(path);
+
+    probe(path, function(err, probedata) {
+      var srcdata = {
+        "title": probedata['metadata']['title'],
+        "ext": probedata['fileext']  
+      };
+      for (i = 0; i < probedata['streams'].length; i++) {
+        var stream = probedata['streams'][i];
+        if (stream['codec_type'] == 'video') {
+          srcdata['width'] = stream['width'];
+          srcdata['height'] = stream['height'];
+          srcdata['videobitrate'] = stream['bit_rate'];
+        } else if (stream['codec_type'] == 'audio') {
+          srcdata['audiobitrate'] = stream['bit_rate'];
+        }
+      }
+      importfile(path, srcdata);
+    });
   })
 
-function importfile(path) {
+function importfile(path, srcdata) {
     var srcfile;
+
     path.replace(/^(.*\/)?([^/]*)$/, function(_, dir, file) {
       srcfile = file;
     });
-    console.log(srcfile);
-    if(srcfile.match(/\.mp4$/)) {
+    if(srcdata['ext'] == '.mp4') {
       var srcname;
       srcfile.replace(/^(.*)\.mp4$/, function(_, name) {
         srcname = name;
@@ -60,17 +79,37 @@ function importfile(path) {
           "destination_file": destpath + settings['file'],
           "encoder_options": settings['encoder']
         };
-        request({ method: 'POST', url: transcoderapi, form: JSON.stringify(jobreq) }, function(err, res, body) {
-          var job = JSON.parse(body);
-          console.log(job.message, job.job_id);
+       
+        if (opts['--dry-run']) {
+           console.log("Dry run - not enqueing " + settings['file']);
+        } else {
+          request({ method: 'POST', url: transcoderapi, form: JSON.stringify(jobreq) }, function(err, res, body) {
+            var job = JSON.parse(body);
+            console.log(job.message, job.job_id);
+          });
+        }
+      }
+      var origdest = srcname + '_' + 'orig' + '.mp4';
+      if (opts['--dry-run']) {
+        console.log("Dry run - not copying " + origdest);
+      } else {
+        fs.copy(path, destpath + origdest, function(err) {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log("Source file copied");
+          }
         });
       }
 
       var root = builder.create('smil', {version: '1.0', encoding: 'UTF-8', standalone: true}); 
-      root.att('title', srcname);
+      root.att('title', srcdata['title']);
 
       var rootsw = root.ele('body').ele('switch');
-      var el = null;
+      var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': origdest});
+      el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
+      el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
+
       for (key in profile) {
         var p = profile[key];
         var h = p['height'];
@@ -82,8 +121,13 @@ function importfile(path) {
         el = rootsw.ele('video', {'height': h, 'width': w, 'src': src});
         el.ele('param', {'name': 'videoBitrate', 'value': vb, 'valuetype': 'data'});
         el.ele('param', {'name': 'audioBitrate', 'value': ab, 'valuetype': 'data'});
-      } 
+      }      
       var smilxml = rootsw.end({ pretty: true });
-      fs.writeFile(destpath + srcname + ".smil", smilxml);
+      if (opts['--dry-run']) {
+        console.log("Dry run - not writing SMIL file");
+        console.log(smilxml);
+      } else {
+        fs.writeFile(destpath + srcname + ".smil", smilxml);
+      }
     }
 }
