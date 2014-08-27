@@ -57,9 +57,13 @@ var timer = setInterval(tick, 1000);
 
 watcher
   .on('add', function(path) {
-    incomingfiles[path] = {
-      "processed": false
-    };
+    if (path.match(/\.mp4$/)) {
+      incomingfiles[path] = {
+        "processed": false
+      };
+    } else {
+      console.log("Ignoring file with no .mp4 suffix");
+    }
   })
 
 function processfile(path, probedata) {
