@@ -102,13 +102,18 @@ function importfile(path, srcdata) {
       srcfile.replace(/^(.*)\.mp4$/, function(_, name) {
         srcname = name;
       }); 
-   
+
+      var destfilepath = destpath + srcname + "/";
+      if (!fs.existsSync(destfilepath)) {
+        fs.mkdirSync(destfilepath);
+      }
+
       for (key in profile) {
         var settings = profile[key];
         settings['file'] = srcname + '_' + key + '.mp4';
         var jobreq = {
           "source_file": path,
-          "destination_file": destpath + settings['file'],
+          "destination_file": destfilepath + settings['file'],
           "encoder_options": settings['encoder']
         };
        
@@ -125,7 +130,7 @@ function importfile(path, srcdata) {
       if (opts['--dry-run']) {
         console.log("Dry run - not copying " + origdest);
       } else {
-        fs.copy(path, destpath + origdest, function(err) {
+        fs.copy(path, destfilepath + origdest, function(err) {
           if (err) {
             console.error(err);
           } else {
@@ -138,7 +143,7 @@ function importfile(path, srcdata) {
       root.att('title', srcdata['title']||srcname);
 
       var rootsw = root.ele('body').ele('switch');
-      var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': origdest});
+      var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': srcname + "/" + origdest});
       el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
       el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
 
@@ -146,7 +151,7 @@ function importfile(path, srcdata) {
         var p = profile[key];
         var h = p['height'];
         var w = p['width'];
-        var src = p['file'];
+        var src = srcname + "/" + p['file'];
         var vb = p['video'];
         var ab = p['audio'];
 
