@@ -36,33 +36,56 @@ var request = require('request');
 var profile = config['profile'];
 var probe = require('node-ffprobe');
 
+var incomingfiles = {};
+
+function tick() {
+  for (p in incomingfiles) {
+    if (!incomingfiles[p].processed) {
+      probe(p, function(err, probedata) {
+        if (err) {
+          // File is probably growing. We need to wait for the complete file
+          return;
+        }
+        incomingfiles[p].processed = true;
+        processfile(p, probedata);
+      });
+    }
+  }
+}
+
+var timer = setInterval(tick, 1000);
+
 watcher
   .on('add', function(path) {
-    console.log("ADD", path);
-
-    probe(path, function(err, probedata) {
-      var srcdata = {
-        "ext": probedata['fileext']  
-      };
-      if (probedata['metadata']) {
-        srcdata['title'] = probedata['metadata']['title'];
-      }
-      for (i = 0; i < probedata['streams'].length; i++) {
-        var stream = probedata['streams'][i];
-        if (stream['codec_type'] == 'video') {
-          srcdata['width'] = stream['width'];
-          srcdata['height'] = stream['height'];
-          srcdata['videobitrate'] = stream['bit_rate'];
-        } else if (stream['codec_type'] == 'audio') {
-          srcdata['audiobitrate'] = stream['bit_rate'];
-        }
-        if (opts['--dry-run']) {
-          console.log(srcdata);
-        }
-      }
-      importfile(path, srcdata);
-    });
+    incomingfiles[path] = {
+      "processed": false
+    };
   })
+
+function processfile(path, probedata) {
+  var srcdata = {
+    "ext": probedata['fileext']  
+  };
+  if (probedata['metadata']) {
+    srcdata['title'] = probedata['metadata']['title'];
+  }
+  for (i = 0; i < probedata['streams'].length; i++) {
+    var stream = probedata['streams'][i];
+    if (stream['codec_type'] == 'video') {
+      srcdata['width'] = stream['width'];
+      srcdata['height'] = stream['height'];
+      srcdata['videobitrate'] = stream['bit_rate'];
+    } else if (stream['codec_type'] == 'audio') {
+      srcdata['audiobitrate'] = stream['bit_rate'];
+    }
+    if (opts['--dry-run']) {
+      console.log(srcdata);
+    }
+  }
+  // File is complete let's transcode it
+  console.log("File is ready");
+  importfile(path, srcdata);
+} 
 
 function importfile(path, srcdata) {
     var srcfile;
