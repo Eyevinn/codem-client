@@ -1,0 +1,4 @@
+{
+  watchfolder: '/mnt/resource/testincoming',
+  destination: '/mnt/resource/test/'
+}

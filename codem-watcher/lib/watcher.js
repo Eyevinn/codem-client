@@ -35,6 +35,7 @@ var fs = require('fs-extra');
 var request = require('request');
 var profile = config['profile'];
 var probe = require('node-ffprobe');
+var jobqueue = require('./jobqueue');
 
 var incomingfiles = {};
 
@@ -118,15 +119,8 @@ function importfile(path, srcdata) {
           "destination_file": destfilepath + settings['file'],
           "encoder_options": settings['encoder']
         };
-       
-        if (opts['--dry-run']) {
-           console.log("Dry run - not enqueing " + settings['file']);
-        } else {
-          request({ method: 'POST', url: transcoderapi, form: JSON.stringify(jobreq) }, function(err, res, body) {
-            var job = JSON.parse(body);
-            console.log(job.message, job.job_id);
-          });
-        }
+
+        jobqueue.enqueue(jobreq);
       }
       var origdest = srcname + '_' + 'orig' + '.mp4';
       if (opts['--dry-run']) {

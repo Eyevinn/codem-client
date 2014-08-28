@@ -2,7 +2,7 @@
   "author": "Jonas Birme",
   "name": "codem-watcher",
   "description": "Node commandline application that monitors a folder and enqueue transcoder jobs",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "main": "./lib/watcher.js",
   "bin": {
     "codem-watcher": "./bin/codem-watcher"
@@ -13,7 +13,8 @@
     "xmlbuilder": ">= 2.4.3",
     "argsparser": ">= 0.0.6",
     "node-ffprobe": ">= 1.2.2",
-    "fs-extra": ">= 0.11.0" 
+    "fs-extra": ">= 0.11.0",
+    "fast-list": ">= 1.0.2"
   },
   "engines": "*"
 }
