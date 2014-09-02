@@ -1,0 +1,14 @@
+{
+    "author": "Fredrik Johansson"
+  , "name": "codem-manager"
+  , "description": "Node commandline application that listens on HTTP and enqueues transcoder jobs"
+  , "version": "0.0.1"
+  , "main": "./lib/manager.js"
+  , "bin": {
+    "codem-manager": "./bin/codem-manager"
+  }
+  , "dependencies": {
+    "express": "~4.2.0"
+    ,"request": ">= 2.40.0"
+  }
+}
