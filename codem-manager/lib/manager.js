@@ -1,5 +1,33 @@
+/*
+The MIT License (MIT)
+
+Copyright (c) 2014 Exceeds Your Expecations Vinn AB
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
 var express = require('express')
-   ,request = require('request');
+   ,request = require('request')
+   ,     fs = require('fs')
+   ,   temp = require('temp').track();
+
+//var config = require('./config').load();
 var server = null;
 var FastList = require('fast-list');
 var queue = new FastList();
@@ -12,12 +40,21 @@ var transcoders = [ 'http://localhost:8080/jobs'
 
 exports.launch = function() {
     server = express();
-    server.post('/',postNewJobs);
+    server.post('/jobs',postNewJobs);
+    server.get('/jobs',getTranscoderStatus);
+    server.get('/download/*',getFile); // Just for developing
     server.get('/',getTranscoderStatus);
     server.listen(8099,"localhost");
     console.log("I listen");
 }
 
+//------ getFile TEMPORARY FUNCTION ----------------------------------------------------
+getFile = function(req, res) {
+    var file = __dirname + req.url;
+    res.download(file);
+}
+
+//------ getTranscoderStatus ----------------------------------------------------
 getTranscoderStatus = function(req, res) {
     _getTranscoderStatus(function(responses) {
         var body = responses;
@@ -29,11 +66,7 @@ getTranscoderStatus = function(req, res) {
 function _getTranscoderStatus(callback) {
     var responses = {} , gotten = 0;
     for (var i=0; i<transcoders.length; i++) {
-        //console.log("Calling " + transcoders[i]);
         request(transcoders[i], function(err, res2, body) {
-            //console.log("Getting " + JSON.stringify(res2) + " response");
-            //console.log("Getting " + res2.request.href + " response");
-            //console.log("Getting " + body + " body");
             responses[res2.request.href] = JSON.parse(body);
             if (++gotten == transcoders.length) { //All answers are in
                 callback(responses);
@@ -42,6 +75,7 @@ function _getTranscoderStatus(callback) {
     }
 }
 
+//------ postNewJobs -----------------------------------------------------------
 postNewJobs = function(req, res) {
     var postData = "";
     req.on('data', function(data) { postData += data; });
@@ -51,31 +85,34 @@ postNewJobs = function(req, res) {
 processPostedJob = function(postData, res) {
     console.log("Somebody POSTed to me:\n" + postData); 
     var post = JSON.parse(postData);
-    var source = post.source; //TODO: Accept non-local URL
-    var destination = post.destination; //TODO: Accept non-local URL
-    // job as codem-transcode wants it
-    var job = { 'source_file'      : source
-               ,'destination_file' : destination
-               ,'encoder_options'  : "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 240000"
-    };
-    //console.log("Job is \n " + JSON.stringify(job));
-    enqueue(job);
+    var localsource = '/tmp/';
+    var localdest = post.destination; //TODO: Accept non-local URL
+    var getsource = request(post.source);
+    getsource.on('response', function(res) { 
+        var regmatch = res.headers['content-disposition'].match(/attachment; filename="?([^"]*)"?/);
+        localsource += regmatch[1];
+        console.log("Fetching file to " + localsource);
+        res.pipe(fs.createWriteStream(localsource));
+    });
+    getsource.on('end', function(){ enqueJobs(localsource, localdest); });
     var body = {};
-    body['message'] = "Job enqueued";
+    body['message'] = "Job hopefully enqueued";
     res.setHeader('Content-Type','application/json; charset=utf-8');
     res.statusCode = 202; //Job accepted
     res.end(JSON.stringify(body), 'utf8');
 }
 
-function selectTranscoder(transcoders) {
-    var keys = Object.keys(transcoders);
-    var transcoder = keys.sort( function(a,b) { 
-        return transcoders[b].free_slots - transcoders[a].free_slots; 
-    } )[0];
+enqueJobs = function(sourcefile, destinationpath) {
+    // job as codem-transcode wants it
+    var job = { 'source_file'      : sourcefile
+               ,'destination_file' : destinationpath
+               ,'encoder_options'  : "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 240000"
+    };
+    console.log("Job is \n " + JSON.stringify(job));
+    enqueue(job);
 }
 
-// Queue stuff
-//
+//------ Queue polling ---------------------------------------------------------
 function tick() {
     if ( jobreq = queue.shift() ) {
         console.log('I picked from the queue ' + JSON.stringify(jobreq));
