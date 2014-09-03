@@ -26,6 +26,7 @@ var express = require('express')
    ,request = require('request')
    ,     fs = require('fs')
    , FastList = require('fast-list')
+   ,builder = require('xmlbuilder')
    ,   temp = require('temp').track(); //TODO Should probably use this
 
 var config = require('./config').load();
@@ -85,25 +86,26 @@ postNewJobs = function(req, res) {
 processPostedJob = function(postData, res) {
     console.log("Somebody POSTed to me:\n" + postData); 
     var post = JSON.parse(postData);
-    var localsource = '/tmp/';
-    var localdest =  localsource;
+    var localsource;
+    var localdest =  '/tmp/';
     var getsource = request(post.source);
     var basename;
     getsource.on('response', function(res) { 
         var regmatch = res.headers['content-disposition'].match(/attachment; filename="?(([^".]+)\.(mp4|MP4))"?/);
-        localsource += regmatch[1];
         basename=regmatch[2];
         var suffix=regmatch[3]; // mp4 or MP4
         if (!suffix) { return; }; //FIXME
         localdest += basename + '/';
         fs.mkdir(localdest);
+        localsource = localdest + basename + '.mp4';
         console.log("Fetching file to " + localsource);
         res.pipe(fs.createWriteStream(localsource));
     });
     getsource.on('end', function(){
-        enqueJobs({'source_file'       : localsource 
+        createSMIL(localsource, basename, localdest);
+        enqueJobs({ 'source_file'     : localsource 
                    ,'destination_dir' : localdest
-                   ,'file_basename'    : basename}); 
+                   ,'file_basename'   : basename}); 
     });
     var body = {};
     body['message'] = "Job hopefully enqueued";
@@ -152,3 +154,53 @@ function tick() {
  
 var timer = setInterval(tick, 8000);
 
+//------ SMIL creation ---------------------------------------------------------
+
+function getSourceData(probedata) {
+    var srcdata = {
+        "ext": probedata['fileext']  
+    };
+    if (probedata['metadata']) {
+        srcdata['title'] = probedata['metadata']['title'];
+    }
+    for (i = 0; i < probedata['streams'].length; i++) {
+        var stream = probedata['streams'][i];
+        if (stream['codec_type'] == 'video') {
+            srcdata['width'] = stream['width'];
+            srcdata['height'] = stream['height'];
+            srcdata['videobitrate'] = stream['bit_rate'];
+        } else if (stream['codec_type'] == 'audio') {
+            srcdata['audiobitrate'] = stream['bit_rate'];
+        }
+    }
+    return srcdata;
+} 
+
+function createSMIL(localsource,basename,destpath) {
+    var probe = require('node-ffprobe');
+    probe(localsource, function(err, probedata) {
+        var srcdata = getSourceData(probedata);
+        var root = builder.create('smil', {version: '1.0', encoding: 'UTF-8', standalone: true}); 
+        root.att('title', srcdata['title'] || basename);
+
+        var rootsw = root.ele('body').ele('switch');
+        var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': basename + '.mp4'});
+        el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
+        el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
+
+        for (key in config.profile) {
+            var p = config.profile[key];
+            var h = p['height'];
+            var w = p['width'];
+            var src = basename + '_' + key + '.mp4';
+            var vb = p['video'];
+            var ab = p['audio'];
+
+            el = rootsw.ele('video', {'height': h, 'width': w, 'src': src});
+            el.ele('param', {'name': 'videoBitrate', 'value': vb, 'valuetype': 'data'});
+            el.ele('param', {'name': 'audioBitrate', 'value': ab, 'valuetype': 'data'});
+        }      
+        var smilxml = rootsw.end({ pretty: true });
+        fs.writeFile(destpath + basename + ".smil", smilxml);
+    });
+}
