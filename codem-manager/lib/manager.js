@@ -25,11 +25,11 @@ THE SOFTWARE.
 var express = require('express')
    ,request = require('request')
    ,     fs = require('fs')
-   ,   temp = require('temp').track();
+   , FastList = require('fast-list')
+   ,   temp = require('temp').track(); //TODO Should probably use this
 
-//var config = require('./config').load();
+var config = require('./config').load();
 var server = null;
-var FastList = require('fast-list');
 var jobqueue = new FastList();
 
 
@@ -113,13 +113,12 @@ processPostedJob = function(postData, res) {
 }
 
 enqueJobs = function(jobinfo) {
-    // Build a job as codem-transcode wants it
-    var job = { 'source_file'      : jobinfo.source_file
-               ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '.mp4'
-               ,'encoder_options'  : "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 240000"
-    };
-    console.log("Job is \n " + JSON.stringify(job));
-    jobqueue.push(job);
+    for (key in config.profile) {
+        var job = { 'source_file'      : jobinfo.source_file
+                   ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + key + '.mp4'
+                   ,'encoder_options'  : config.profile[key].encoder };
+        jobqueue.push(job);
+    }
 }
 
 //------ Queue polling ---------------------------------------------------------
