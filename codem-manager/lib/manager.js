@@ -30,7 +30,7 @@ var express = require('express')
 //var config = require('./config').load();
 var server = null;
 var FastList = require('fast-list');
-var queue = new FastList();
+var jobqueue = new FastList();
 
 
 // This needs to be configurable
@@ -86,15 +86,25 @@ processPostedJob = function(postData, res) {
     console.log("Somebody POSTed to me:\n" + postData); 
     var post = JSON.parse(postData);
     var localsource = '/tmp/';
-    var localdest = post.destination; //TODO: Accept non-local URL
+    var localdest =  localsource;
     var getsource = request(post.source);
+    var basename;
     getsource.on('response', function(res) { 
-        var regmatch = res.headers['content-disposition'].match(/attachment; filename="?([^"]*)"?/);
+        var regmatch = res.headers['content-disposition'].match(/attachment; filename="?(([^".]+)\.(mp4|MP4))"?/);
         localsource += regmatch[1];
+        basename=regmatch[2];
+        var suffix=regmatch[3]; // mp4 or MP4
+        if (!suffix) { return; }; //FIXME
+        localdest += basename + '/';
+        fs.mkdir(localdest);
         console.log("Fetching file to " + localsource);
         res.pipe(fs.createWriteStream(localsource));
     });
-    getsource.on('end', function(){ enqueJobs(localsource, localdest); });
+    getsource.on('end', function(){
+        enqueJobs({'source_file'       : localsource 
+                   ,'destination_dir' : localdest
+                   ,'file_basename'    : basename}); 
+    });
     var body = {};
     body['message'] = "Job hopefully enqueued";
     res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -102,20 +112,21 @@ processPostedJob = function(postData, res) {
     res.end(JSON.stringify(body), 'utf8');
 }
 
-enqueJobs = function(sourcefile, destinationpath) {
-    // job as codem-transcode wants it
-    var job = { 'source_file'      : sourcefile
-               ,'destination_file' : destinationpath
+enqueJobs = function(jobinfo) {
+    // Build a job as codem-transcode wants it
+    var job = { 'source_file'      : jobinfo.source_file
+               ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '.mp4'
                ,'encoder_options'  : "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 240000"
     };
     console.log("Job is \n " + JSON.stringify(job));
-    enqueue(job);
+    jobqueue.push(job);
 }
 
 //------ Queue polling ---------------------------------------------------------
+//TODO Would be better if the polling could continue directly if there are more jobs in the queue
 function tick() {
-    if ( jobreq = queue.shift() ) {
-        console.log('I picked from the queue ' + JSON.stringify(jobreq));
+    if ( jobreq = jobqueue.shift() ) {
+        console.log('I picked from the jobqueue ' + JSON.stringify(jobreq));
         _getTranscoderStatus(function(responses) {
             console.log("I got responses " + JSON.stringify(responses));
             var keys = Object.keys(responses);
@@ -134,7 +145,7 @@ function tick() {
                     });
             } else {
                 console.log("Nothing available: " + responses[selected].free_slots);
-                queue.unshift(jobreq); //Back to front of queue
+                jobqueue.unshift(jobreq); //Back to front of queue
             }
         });
     }
@@ -142,6 +153,3 @@ function tick() {
  
 var timer = setInterval(tick, 8000);
 
-enqueue = function(job) {
-    queue.push(job);
-};
