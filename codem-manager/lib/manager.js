@@ -52,7 +52,12 @@ exports.launch = function() {
 //------ getFile TEMPORARY FUNCTION ----------------------------------------------------
 getFile = function(req, res) {
     var file = __dirname + req.url;
-    res.download(file);
+    try {
+        res.download(file);
+    } catch(err) {
+        console.log(err);
+        res.status(404).send(err)
+    }
 }
 
 //------ getTranscoderStatus ----------------------------------------------------
@@ -67,8 +72,12 @@ getTranscoderStatus = function(req, res) {
 function _getTranscoderStatus(callback) {
     var responses = {} , gotten = 0;
     for (var i=0; i<transcoders.length; i++) {
-        request(transcoders[i], function(err, res2, body) {
-            responses[res2.request.href] = JSON.parse(body);
+        request(transcoders[i], function(err, res) {
+            if (err) {
+                console.log(err);
+            } else {
+                responses[res.request.href] = JSON.parse(res.body);
+            }
             if (++gotten == transcoders.length) { //All answers are in
                 callback(responses);
             }
@@ -134,7 +143,7 @@ function tick() {
             keys.sort( function(a,b) { 
                 return responses[b].free_slots - responses[a].free_slots; });
             var selected = keys[0];
-            if (responses[selected].free_slots > 0) {
+            if (selected && responses[selected].free_slots > 0) {
                 console.log("Sending to " + selected + ' which has ' + responses[selected].free_slots);
                 request({  
                     method : 'POST'
@@ -145,7 +154,7 @@ function tick() {
                         console.log(job.message, job.job_id);
                     });
             } else {
-                console.log("Nothing available: " + responses[selected].free_slots);
+                console.log("Nothing available: " + (selected?responses[selected].free_slots:'No transcoder nodes'));
                 jobqueue.unshift(jobreq); //Back to front of queue
             }
         });
