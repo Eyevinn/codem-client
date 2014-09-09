@@ -36,21 +36,21 @@ var config = {
       'height': 720,
       'video': '1300000',
       'audio': '128000',
-      'encoder': "-s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 1100000" 
+      'encoder': "-s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1100000" 
     },
     '360p': {
       'width': 640,
       'height': 360,
       'video': '820000',
       'audio': '64000',
-      'encoder': "-s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 750000"
+      'encoder': "-s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 750000"
     },
     '160p': {
       'width': 284,
       'height': 160,
       'video': '300000',
       'audio': '46000',
-      'encoder': "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 240000"
+      'encoder': "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 240000"
     }
   }
 };
