@@ -43,21 +43,14 @@ exports.launch = function() {
     server = express();
     server.post('/jobs',postNewJobs);
     server.get('/jobs',getTranscoderStatus);
-    server.get('/download/*',getFile); // Just for developing
     server.get('/',getTranscoderStatus);
+
+    server.use(express.static(__dirname + '/public',  // While developing -
+                {'index': false,                      // host files to transcode
+                 'setHeaders': function(res,path){res.attachment(path)}}));
+
     server.listen(8099,"localhost");
     console.log("I listen");
-}
-
-//------ getFile TEMPORARY FUNCTION ----------------------------------------------------
-getFile = function(req, res) {
-    var file = __dirname + req.url;
-    try {
-        res.download(file);
-    } catch(err) {
-        console.log(err);
-        res.status(404).send(err)
-    }
 }
 
 //------ getTranscoderStatus ----------------------------------------------------
