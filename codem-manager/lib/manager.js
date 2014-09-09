@@ -59,7 +59,7 @@ exports.launch = function() {
                  'setHeaders': function(res,path){res.attachment(path)}}));
 
     server.listen(8099,"localhost");
-    console.log("I listen");
+    log("I listen");
 }
 
 //------ getCodemNotification --------------------------------------------------
@@ -105,7 +105,7 @@ function _getTranscoderStatus(callback) {
     for (var i=0; i<transcoders.length; i++) {
         request(transcoders[i], function(err, res) {
             if (err) {
-                console.log(err);
+                log(err);
             } else {
                 responses[res.request.href] = JSON.parse(res.body);
             }
@@ -132,7 +132,7 @@ var mkdirSync = function (path) {
 }
 
 processPostedJob = function(postData, res) {
-    console.log("Received POST:\n" + postData); 
+    log("Received POST:\n" + postData); 
     var post = JSON.parse(postData);
     var job_id = uuid.v4().replace(/-/g,'');
     jobs[job_id] = post;
@@ -150,7 +150,7 @@ processPostedJob = function(postData, res) {
         localdest += basename + '/';
         mkdirSync(localdest);
         localsource = localdest + basename + '.mp4';
-        console.log("Fetching file to " + localsource);
+        log("Fetching file to " + localsource);
         res.pipe(fs.createWriteStream(localsource));
     });
     getsource.on('end', function(){
@@ -188,20 +188,20 @@ function tick() {
                 return responses[b].free_slots - responses[a].free_slots; });
             var selected = keys[0];
             if (selected && responses[selected].free_slots > 0) {
-                console.log("Sending to " + selected + ' which has ' + responses[selected].free_slots);
+                log("Sending to " + selected + ' which has ' + responses[selected].free_slots);
                 request({  
                     method : 'POST'
                     , url  : selected
                     , form : JSON.stringify(jobreq) } ,
                     function(err, res, body) {
                         var job = JSON.parse(body);
-                        //console.log(job.message, job.job_id);
+                        //log(job.message, job.job_id);
                         log("Started codem job" + job.job_id + " belonging to job " + jobreq.job_id);
                         jobs[jobreq.job_id].codem_jobs.pending[ job.job_id ] = 1;
                         codemjob2job[job.job_id] = jobreq.job_id;
                     });
             } else {
-                console.log("Nothing available: " + (selected?responses[selected].free_slots:'No transcoder nodes'));
+                log("Nothing available: " + (selected?responses[selected].free_slots:'No transcoder nodes'));
                 jobqueue.unshift(jobreq); //Back to front of queue
             }
         });
