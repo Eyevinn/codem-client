@@ -85,6 +85,14 @@ postNewJobs = function(req, res) {
     req.on('end', function() { processPostedJob(postData, res); } );    
 }
 
+var mkdirSync = function (path) {
+    try {
+        fs.mkdirSync(path);
+    } catch(e) {
+        if ( e.code != 'EEXIST' ) throw e;
+    }
+}
+
 processPostedJob = function(postData, res) {
     console.log("Somebody POSTed to me:\n" + postData); 
     var post = JSON.parse(postData);
@@ -98,7 +106,7 @@ processPostedJob = function(postData, res) {
         var suffix=regmatch[3]; // mp4 or MP4
         if (!suffix) { return; }; //FIXME
         localdest += basename + '/';
-        fs.mkdir(localdest);
+        mkdirSync(localdest);
         localsource = localdest + basename + '.mp4';
         console.log("Fetching file to " + localsource);
         res.pipe(fs.createWriteStream(localsource));
