@@ -27,11 +27,14 @@ var express = require('express')
    ,     fs = require('fs')
    , FastList = require('fast-list')
    ,builder = require('xmlbuilder')
+   ,   uuid = require('node-uuid')
    ,   temp = require('temp').track(); //TODO Should probably use this
 
 var config = require('./config').load();
 var server = null;
 var jobqueue = new FastList();
+var jobs = {};           // One "job" may contain multiple codem jobs
+var codemjob2job = {};   // A mapping from codem jobs to the our job
 
 
 // This needs to be configurable
@@ -39,11 +42,17 @@ var jobqueue = new FastList();
 var transcoders = [ 'http://localhost:8080/jobs'
                    , 'http://127.0.0.1:8080/jobs' ];
 
+
+var log = function(args) {
+    console.log(args);
+}
+
 exports.launch = function() {
     server = express();
     server.post('/jobs',postNewJobs);
     server.get('/jobs',getTranscoderStatus);
     server.get('/',getTranscoderStatus);
+    server.put('/codem_notify', getCodemNotification);
 
     server.use(express.static(__dirname + '/public',  // While developing -
                 {'index': false,                      // host files to transcode
@@ -51,6 +60,35 @@ exports.launch = function() {
 
     server.listen(8099,"localhost");
     console.log("I listen");
+}
+
+//------ getCodemNotification --------------------------------------------------
+Object.size = function(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+};
+
+getCodemNotification = function(req, res) {
+    var putdata = "";
+    req.on('data',function(data,res){ putdata += data; });
+    req.on('end', function() {
+        var codemjob = JSON.parse(putdata);
+        if (codemjob.status === 'success') {
+            var job_id = codemjob2job[codemjob.id];
+            jobs[job_id].codem_jobs.completed[codemjob.id] = 1;
+            delete jobs[job_id].codem_jobs.pending[codemjob.id];
+            if (Object.size( jobs[job_id].codem_jobs.pending ) == 0) {
+                log("All codem jobs are done!");
+            }
+        }
+        log(Object.size( jobs[codemjob2job[codemjob.id]].codem_jobs.pending ) + " jobs pending");
+    });
+    res.setHeader('Content-Type','application/json; charset=utf-8');
+    res.end(JSON.stringify({answer:'thanks bro'}),'utf8'); //TODO what here?
+    //FIXME Having three transcoding profiles, the last (the sixth) notification is never taken care of.
 }
 
 //------ getTranscoderStatus ----------------------------------------------------
@@ -94,8 +132,12 @@ var mkdirSync = function (path) {
 }
 
 processPostedJob = function(postData, res) {
-    console.log("Somebody POSTed to me:\n" + postData); 
+    console.log("Received POST:\n" + postData); 
     var post = JSON.parse(postData);
+    var job_id = uuid.v4().replace(/-/g,'');
+    jobs[job_id] = post;
+    jobs[job_id].codem_jobs = {pending : {}, completed : {}};
+
     var localsource;
     var localdest =  '/tmp/';
     var getsource = request(post.source);
@@ -113,7 +155,8 @@ processPostedJob = function(postData, res) {
     });
     getsource.on('end', function(){
         createSMIL(localsource, basename, localdest);
-        enqueJobs({ 'source_file'     : localsource 
+        enqueJobs({'job_id'           : job_id
+                   ,'source_file'     : localsource 
                    ,'destination_dir' : localdest
                    ,'file_basename'   : basename}); 
     });
@@ -126,10 +169,12 @@ processPostedJob = function(postData, res) {
 
 enqueJobs = function(jobinfo) {
     for (key in config.profile) {
-        var job = { 'source_file'      : jobinfo.source_file
-                   ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + key + '.mp4'
-                   ,'encoder_options'  : config.profile[key].encoder };
-        jobqueue.push(job);
+        var codem_job = {'job_id'            : jobinfo.job_id
+                         ,'source_file'      : jobinfo.source_file
+                         ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + key + '.mp4'
+                         ,'callback_urls'    : [ 'http://localhost:8099/codem_notify' ]
+                         ,'encoder_options'  : config.profile[key].encoder };
+        jobqueue.push(codem_job);
     }
 }
 
@@ -137,9 +182,7 @@ enqueJobs = function(jobinfo) {
 //TODO Would be better if the polling could continue directly if there are more jobs in the queue
 function tick() {
     if ( jobreq = jobqueue.shift() ) {
-        console.log('I picked from the jobqueue ' + JSON.stringify(jobreq));
         _getTranscoderStatus(function(responses) {
-            console.log("I got responses " + JSON.stringify(responses));
             var keys = Object.keys(responses);
             keys.sort( function(a,b) { 
                 return responses[b].free_slots - responses[a].free_slots; });
@@ -152,7 +195,10 @@ function tick() {
                     , form : JSON.stringify(jobreq) } ,
                     function(err, res, body) {
                         var job = JSON.parse(body);
-                        console.log(job.message, job.job_id);
+                        //console.log(job.message, job.job_id);
+                        log("Started codem job" + job.job_id + " belonging to job " + jobreq.job_id);
+                        jobs[jobreq.job_id].codem_jobs.pending[ job.job_id ] = 1;
+                        codemjob2job[job.job_id] = jobreq.job_id;
                     });
             } else {
                 console.log("Nothing available: " + (selected?responses[selected].free_slots:'No transcoder nodes'));

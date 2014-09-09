@@ -11,5 +11,6 @@
     "express": "~4.2.0"
     ,"request": ">= 2.40.0"
     ,"fast-list": ">= 1.0.2"
+    ,"node-uuid": "*"
   }
 }
