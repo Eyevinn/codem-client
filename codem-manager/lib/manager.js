@@ -28,20 +28,12 @@ var express = require('express')
    , FastList = require('fast-list')
    ,builder = require('xmlbuilder')
    ,   uuid = require('node-uuid')
-   ,   temp = require('temp').track(); //TODO Should probably use this
 
 var config = require('./config').load();
 var server = null;
 var jobqueue = new FastList();
 var jobs = {};           // One "job" may contain multiple codem jobs
 var codemjob2job = {};   // A mapping from codem jobs to the our job
-
-
-// This needs to be configurable
-
-var transcoders = [ 'http://localhost:8080/jobs'
-                   , 'http://127.0.0.1:8080/jobs' ];
-
 
 var log = function(args) {
     console.log(args);
@@ -58,8 +50,8 @@ exports.launch = function() {
                 {'index': false,                      // host files to transcode
                  'setHeaders': function(res,path){res.attachment(path)}}));
 
-    server.listen(8099,"localhost");
-    log("I listen");
+    server.listen(config.port,"localhost");
+    log("Codem manager listening on port " + config.port);
 }
 
 //------ getCodemNotification --------------------------------------------------
@@ -102,6 +94,7 @@ getTranscoderStatus = function(req, res) {
 
 function _getTranscoderStatus(callback) {
     var responses = {} , gotten = 0;
+    var transcoders = config.transcoderapi.transcoders;
     for (var i=0; i<transcoders.length; i++) {
         request(transcoders[i], function(err, res) {
             if (err) {
@@ -139,7 +132,7 @@ processPostedJob = function(postData, res) {
     jobs[job_id].codem_jobs = {pending : {}, completed : {}};
 
     var localsource;
-    var localdest =  '/tmp/';
+    var localdest =  config.localdestination + '/';
     var getsource = request(post.source);
     var basename;
     getsource.on('response', function(res) { 
@@ -158,22 +151,26 @@ processPostedJob = function(postData, res) {
         enqueJobs({'job_id'           : job_id
                    ,'source_file'     : localsource 
                    ,'destination_dir' : localdest
+                   ,'formats'         : post.formats
                    ,'file_basename'   : basename}); 
     });
     var body = {};
-    body['message'] = "Job hopefully enqueued";
+    body['message'] = "Job enqueued";
     res.setHeader('Content-Type','application/json; charset=utf-8');
     res.statusCode = 202; //Job accepted
     res.end(JSON.stringify(body), 'utf8');
 }
 
 enqueJobs = function(jobinfo) {
-    for (key in config.profile) {
+    var formats = jobinfo.formats || Object.keys( config.profile );
+    log("I will encode formats " + JSON.stringify(formats));
+    for (i=0; i<formats.length; i++) {
+        if (!config.profile[formats[i]]) continue;
         var codem_job = {'job_id'            : jobinfo.job_id
                          ,'source_file'      : jobinfo.source_file
-                         ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + key + '.mp4'
-                         ,'callback_urls'    : [ 'http://localhost:8099/codem_notify' ]
-                         ,'encoder_options'  : config.profile[key].encoder };
+                         ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + formats[i] + '.mp4'
+                         ,'callback_urls'    : [ 'http://' + config.transcoderapi.manager + ':' + config.port + '/codem_notify' ]
+                         ,'encoder_options'  : config.profile[formats[i]].encoder };
         jobqueue.push(codem_job);
     }
 }
@@ -196,7 +193,7 @@ function tick() {
                     function(err, res, body) {
                         var job = JSON.parse(body);
                         //log(job.message, job.job_id);
-                        log("Started codem job" + job.job_id + " belonging to job " + jobreq.job_id);
+                        log("Started codem job " + job.job_id + " belonging to job " + jobreq.job_id);
                         jobs[jobreq.job_id].codem_jobs.pending[ job.job_id ] = 1;
                         codemjob2job[job.job_id] = jobreq.job_id;
                     });

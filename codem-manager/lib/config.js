@@ -27,34 +27,38 @@ var opts = require('argsparser').parse();
 var fs = require('fs');
 
 var config = {
-  destination: '/mnt/resource/test/',
-  transcoderapi: [
-      'http://localhost:8080/jobs',
-      'http://127.0.0.1:8080/jobs'
-  ],
-  profile: {
-    '720p': {
-      'width': 1280,
-      'height': 720,
-      'video': '1300000',
-      'audio': '128000',
-      'encoder': "-s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1100000" 
+    localdestination: '/tmp/',
+    port: 8099,
+    transcoderapi: {
+        manager: 'localhost',   // How transcoder nodes can reach the manager
+        transcoders: [
+            'http://localhost:8080/jobs',
+            'http://127.0.0.1:8080/jobs' 
+            ] 
     },
-    '360p': {
-      'width': 640,
-      'height': 360,
-      'video': '820000',
-      'audio': '64000',
-      'encoder': "-s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 750000"
-    },
-    '160p': {
-      'width': 284,
-      'height': 160,
-      'video': '300000',
-      'audio': '46000',
-      'encoder': "-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 240000"
-    }
-  }
+    profile: {
+        '720p': {
+                  width: 1280,
+                  height: 720,
+                  video: 1300000,
+                  audio: 128000,
+                  encoder: '-s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1100000' 
+              },
+        '360p': {
+                  width: 640,
+                  height: 360,
+                  video: 820000,
+                  audio: 64000,
+                  encoder: '-s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 750000'
+              },
+        '160p': {
+                  width: 284,
+                  height: 160,
+                  video: 300000,
+                  audio: 46000,
+                  encoder: '-s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 240000'
+              }
+             }
 };
 
 var loadedConfig = null;
