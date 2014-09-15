@@ -30,7 +30,7 @@ node.js
 ## Installation
 Install by using npm (http://npmjs.org/):
 
-    # npm install codem-client
+    `npm install codem-client`
 
 ## Configuration
 
