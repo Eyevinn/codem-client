@@ -96,7 +96,7 @@ function _getTranscoderStatus(callback) {
     var responses = {} , gotten = 0;
     var transcoders = config.transcoderapi.transcoders;
     for (var i=0; i<transcoders.length; i++) {
-        request(transcoders[i], function(err, res) {
+        request(transcoders[i] + '/jobs', function(err, res) {
             if (err) {
                 log(err);
             } else {
@@ -165,12 +165,17 @@ enqueJobs = function(jobinfo) {
     var formats = jobinfo.formats || Object.keys( config.profile );
     log("I will encode formats " + JSON.stringify(formats));
     for (i=0; i<formats.length; i++) {
-        if (!config.profile[formats[i]]) continue;
+        var cfg = config.profile[formats[i]];
+        if (!cfg) continue;
+        var encoder_options = 
+            '-s ' + cfg.width + 'x' + cfg.height + 
+            ' -b:v ' + cfg.video + ' -b:a ' + cfg.audio + 
+            ' ' + cfg.options;
         var codem_job = {'job_id'            : jobinfo.job_id
                          ,'source_file'      : jobinfo.source_file
                          ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + formats[i] + '.mp4'
                          ,'callback_urls'    : [ 'http://' + config.transcoderapi.manager + ':' + config.port + '/codem_notify' ]
-                         ,'encoder_options'  : config.profile[formats[i]].encoder };
+                         ,'encoder_options'  : encoder_options };
         jobqueue.push(codem_job);
     }
 }
@@ -205,7 +210,7 @@ function tick() {
     }
 }
  
-var timer = setInterval(tick, 8000);
+var timer = setInterval(tick, 1000);
 
 //------ SMIL creation ---------------------------------------------------------
 
