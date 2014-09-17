@@ -27,36 +27,52 @@ var opts = require('argsparser').parse();
 var fs = require('fs');
 
 var config = {
-  watchfolder: '/mnt/resource/incoming',
-  destination: '/mnt/resource/test/',
-  transcoderapi: 'http://localhost:3080/jobs',
-  profile: {
-    '720p': {
-      'width': 1280,
-      'height': 720,
-      'video': '1300000',
-      'audio': '128000',
-<<<<<<< HEAD
-      'encoder': "-threads 0 -s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 1100000" 
-=======
-      'encoder': "-s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1100000" 
->>>>>>> 4ad0286b7b4feafd4ef000f5ae5c8ee8d7777440
+    localdestination: '/tmp/',
+    port: 8099,
+    transcoderapi: {
+        manager: 'localhost',   // How transcoder nodes can reach the manager
+        transcoders: [
+            'http://localhost:8080',
+            'http://127.0.0.1:8080' 
+            ] 
     },
-    '360p': {
-      'width': 640,
-      'height': 360,
-      'video': '820000',
-      'audio': '64000',
-      'encoder': "-threads 0 -s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 750000"
-    },
-    '160p': {
-      'width': 284,
-      'height': 160,
-      'video': '300000',
-      'audio': '46000',
-      'encoder': "-threads 0 -s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 240000"
-    }
-  }
+    profile: {
+        '720p': {
+                  width: 1280,
+                  height: 720,
+                  video: '1200k',
+                  audio: '128k',
+                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48' 
+              },
+        '480p': {
+                  width: 854,
+                  height: 480,
+                  video: '1000k',
+                  audio: '64k',
+                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+              },
+        '360p': {
+                  width: 640,
+                  height: 360,
+                  video: '820k',
+                  audio: '64k',
+                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+              },
+        '240p': {
+                  width: 426,
+                  height: 240,
+                  video: '600k',
+                  audio: '64k',
+                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+              },
+        '160p': {
+                  width: 284,
+                  height: 160,
+                  video: '300k',
+                  audio: '46k',
+                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+              }
+             }
 };
 
 var loadedConfig = null;

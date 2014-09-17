@@ -9,7 +9,7 @@ function tick() {
   request(transcoderapi, function(err, res, body) {
     var status = JSON.parse(body);
     if (status['free_slots'] > 0) {
-      var jobreq = queue.pop();
+      var jobreq = queue.shift();
       if (jobreq) {
         if (opts['--dry-run']) {
           console.log("Dry run - not enqueing ", jobreq);
