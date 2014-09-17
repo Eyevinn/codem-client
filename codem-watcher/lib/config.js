@@ -31,26 +31,26 @@ var config = {
   destination: '/mnt/resource/test/',
   transcoderapi: 'http://localhost:3080/jobs',
   profile: {
-    '720p': {
-      'width': 1280,
-      'height': 720,
-      'video': '1300000',
-      'audio': '128000',
-      'encoder': "-threads 0 -s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 1100000" 
+    '540p': {
+      'width': 960,
+      'height': 540,
+      'video': '3500000',
+      'audio': '96000',
+      'encoder': "-threads 0 -s 1280x720 -strict experimental -acodec aac -ab 96k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 3500k" 
     },
     '360p': {
       'width': 640,
       'height': 360,
-      'video': '820000',
+      'video': '1200000',
       'audio': '64000',
-      'encoder': "-threads 0 -s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 750000"
+      'encoder': "-threads 0 -s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1200k"
     },
-    '160p': {
-      'width': 284,
-      'height': 160,
-      'video': '300000',
-      'audio': '46000',
-      'encoder': "-threads 0 -s 284x160 -strict experimental -acodec aac -ab 48k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 240000"
+    '270p': {
+      'width': 480,
+      'height': 270,
+      'video': '400000',
+      'audio': '64000',
+      'encoder': "-threads 0 -s 284x160 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 400k"
     }
   }
 };
