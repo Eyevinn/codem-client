@@ -36,11 +36,7 @@ var config = {
       'height': 720,
       'video': '1300000',
       'audio': '128000',
-<<<<<<< HEAD
       'encoder': "-threads 0 -s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b 1100000" 
-=======
-      'encoder': "-s 1280x720 -strict experimental -acodec aac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1100000" 
->>>>>>> 4ad0286b7b4feafd4ef000f5ae5c8ee8d7777440
     },
     '360p': {
       'width': 640,
