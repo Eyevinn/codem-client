@@ -139,7 +139,7 @@ function importfile(path, srcdata) {
       root.att('title', srcdata['title']||srcname);
 
       var rootsw = root.ele('body').ele('switch');
-      var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': srcname + "/" + origdest});
+      var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': srcname + "/" + origdest, 'system-bitrate': srcdata['videobitrate']+srcdata['audiobitrate']});
       el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
       el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
 
