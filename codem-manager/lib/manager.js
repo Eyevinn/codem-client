@@ -33,13 +33,14 @@ var config = require('./config').load();
 var server = null;
 var jobqueue = new FastList();
 var jobs = {};           // One "job" may contain multiple codem jobs
-var codemjob2job = {};   // A mapping from codem jobs to the our job
+var codemjob2job = {};   // A mapping from codem jobs to our "outer" job
 
 var log = function(args) {
     console.log(args);
 }
 
-exports.launch = function() {
+exports.launch = function(port) {
+    port = port ? port : config.port;
     server = express();
     server.post('/jobs',postNewJobs);
     server.get('/jobs',getTranscoderStatus);
@@ -50,8 +51,9 @@ exports.launch = function() {
                 {'index': false,                      // host files to transcode
                  'setHeaders': function(res,path){res.attachment(path)}}));
 
-    server.listen(config.port,"localhost");
-    log("Codem manager listening on port " + config.port);
+    server.listen(port,"localhost");
+    log("Codem manager listening on port " + port);
+    return server;
 }
 
 //------ getCodemNotification --------------------------------------------------
@@ -70,16 +72,18 @@ getCodemNotification = function(req, res) {
         var codemjob = JSON.parse(putdata);
         if (codemjob.status === 'success') {
             var job_id = codemjob2job[codemjob.id];
-            jobs[job_id].codem_jobs.completed[codemjob.id] = 1;
-            delete jobs[job_id].codem_jobs.pending[codemjob.id];
-            if (Object.size( jobs[job_id].codem_jobs.pending ) == 0) {
-                log("All codem jobs are done!");
+            if (job_id) {
+                jobs[job_id].codem_jobs.completed[codemjob.id] = 1;
+                delete jobs[job_id].codem_jobs.pending[codemjob.id];
+                if (Object.size( jobs[job_id].codem_jobs.pending ) == 0) {
+                    log("All codem jobs are done!");
+                }
+                log(Object.size( jobs[codemjob2job[codemjob.id]].codem_jobs.pending ) + " jobs pending");
             }
         }
-        log(Object.size( jobs[codemjob2job[codemjob.id]].codem_jobs.pending ) + " jobs pending");
     });
     res.setHeader('Content-Type','application/json; charset=utf-8');
-    res.end(JSON.stringify({answer:'thanks bro'}),'utf8'); //TODO what here?
+    res.end(JSON.stringify({answer:'thank you'}),'utf8'); //TODO what here?
     //FIXME Having three transcoding profiles, the last (the sixth) notification is never taken care of.
 }
 
