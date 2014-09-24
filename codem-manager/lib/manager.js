@@ -32,6 +32,7 @@ var express = require('express')
 var config = require('./config').load();
 var server = null;
 var jobqueue = new FastList();
+var tcdStatus = {};
 var jobs = {};           // One "job" may contain multiple codem jobs
 var codemjob2job = {};   // A mapping from codem jobs to our "outer" job
 
@@ -107,6 +108,7 @@ function _getTranscoderStatus(callback) {
                 responses[res.request.href] = JSON.parse(res.body);
             }
             if (++gotten == transcoders.length) { //All answers are in
+                tcdStatus = responses;
                 callback(responses);
             }
         });
@@ -185,36 +187,45 @@ enqueJobs = function(jobinfo) {
 }
 
 //------ Queue polling ---------------------------------------------------------
-//TODO Would be better if the polling could continue directly if there are more jobs in the queue
-function tick() {
-    if ( jobreq = jobqueue.shift() ) {
-        _getTranscoderStatus(function(responses) {
-            var keys = Object.keys(responses);
-            keys.sort( function(a,b) { 
-                return responses[b].free_slots - responses[a].free_slots; });
-            var selected = keys[0];
-            if (selected && responses[selected].free_slots > 0) {
-                log("Sending to " + selected + ' which has ' + responses[selected].free_slots);
-                request({  
-                    method : 'POST'
-                    , url  : selected
-                    , form : JSON.stringify(jobreq) } ,
-                    function(err, res, body) {
-                        var job = JSON.parse(body);
-                        //log(job.message, job.job_id);
-                        log("Started codem job " + job.job_id + " belonging to job " + jobreq.job_id);
-                        jobs[jobreq.job_id].codem_jobs.pending[ job.job_id ] = 1;
-                        codemjob2job[job.job_id] = jobreq.job_id;
-                    });
-            } else {
-                log("Nothing available: " + (selected?responses[selected].free_slots:'No transcoder nodes'));
-                jobqueue.unshift(jobreq); //Back to front of queue
-            }
+function postCodemJob(jobreq,selected) {
+    log('Sending to ' + selected + ' which now has ' + tcdStatus[selected].free_slots + ' free slots.');
+    request({  
+        method : 'POST',
+        url    : selected,
+        form   : JSON.stringify(jobreq) } ,
+        function(err, res, body) {
+            var job = JSON.parse(body);
+            log("Started codem job " + job.job_id + " belonging to job " + jobreq.job_id);
+            jobs[jobreq.job_id].codem_jobs.pending[ job.job_id ] = 1;
+            codemjob2job[job.job_id] = jobreq.job_id;
         });
+}
+
+function getFreeTranscoder() {
+    var keys = Object.keys(tcdStatus);
+    keys.sort( function(a,b) { 
+        return tcdStatus[b].free_slots - tcdStatus[a].free_slots; });
+    var selected = keys[0];
+    if (selected && tcdStatus[selected].free_slots > 0) {
+        tcdStatus[selected].free_slots--;
+        return selected;
+    } else
+        return;
+}
+
+function handleJobQueue(responses) {
+    var jobreq,selected;
+    while ((selected=getFreeTranscoder()) && (jobreq=jobqueue.shift())) {
+        postCodemJob(jobreq, selected);
     }
 }
+
+function tick() {
+    if (jobqueue.length)
+        _getTranscoderStatus(handleJobQueue);
+}
  
-var timer = setInterval(tick, 1000);
+var timer = setInterval(tick, 5000);
 
 //------ SMIL creation ---------------------------------------------------------
 
