@@ -28,6 +28,7 @@ var express = require('express')
    , FastList = require('fast-list')
    ,builder = require('xmlbuilder')
    ,   uuid = require('node-uuid')
+   ,    Job = require('./job');
 
 var config = require('./config').load();
 var server = null;
@@ -71,16 +72,9 @@ getCodemNotification = function(req, res) {
     req.on('data',function(data,res){ putdata += data; });
     req.on('end', function() {
         var codemjob = JSON.parse(putdata);
-        if (codemjob.status === 'success') {
-            var job_id = codemjob2job[codemjob.id];
-            if (job_id) {
-                jobs[job_id].codem_jobs.completed[codemjob.id] = 1;
-                delete jobs[job_id].codem_jobs.pending[codemjob.id];
-                if (Object.size( jobs[job_id].codem_jobs.pending ) == 0) {
-                    log("All codem jobs are done!");
-                }
-                log(Object.size( jobs[codemjob2job[codemjob.id]].codem_jobs.pending ) + " jobs pending");
-            }
+        var job_id = codemjob2job[codemjob.id];
+        if (job_id) {
+            jobs[job_id].update_tcd_job(codemjob);
         }
     });
     res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -108,7 +102,7 @@ function _getTranscoderStatus(callback) {
                 responses[res.request.href] = JSON.parse(res.body);
             }
             if (++gotten == transcoders.length) { //All answers are in
-                tcdStatus = responses;
+                tcdStatus = responses; //TODO Update jobs variable from this info
                 callback(responses);
             }
         });
@@ -133,9 +127,8 @@ var mkdirSync = function (path) {
 processPostedJob = function(postData, res) {
     log("Received POST:\n" + postData); 
     var post = JSON.parse(postData);
-    var job_id = uuid.v4().replace(/-/g,'');
-    jobs[job_id] = post;
-    jobs[job_id].codem_jobs = {pending : {}, completed : {}};
+    var job = new Job(post);
+    jobs[job.job_id] = job; //TODO Is this really the best way?
 
     var localsource;
     var localdest =  config.localdestination + '/';
@@ -154,7 +147,7 @@ processPostedJob = function(postData, res) {
     });
     getsource.on('end', function(){
         createSMIL(localsource, basename, localdest);
-        enqueJobs({'job_id'           : job_id
+        enqueJobs({'job_id'           : job.job_id
                    ,'source_file'     : localsource 
                    ,'destination_dir' : localdest
                    ,'formats'         : post.formats
@@ -178,6 +171,7 @@ enqueJobs = function(jobinfo) {
             ' -b:v ' + cfg.video + ' -b:a ' + cfg.audio + 
             ' ' + cfg.options;
         var codem_job = {'job_id'            : jobinfo.job_id
+                         ,'format'           : formats[i]
                          ,'source_file'      : jobinfo.source_file
                          ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + formats[i] + '.mp4'
                          ,'callback_urls'    : [ 'http://' + config.transcoderapi.manager + ':' + config.port + '/codem_notify' ]
@@ -187,17 +181,17 @@ enqueJobs = function(jobinfo) {
 }
 
 //------ Queue polling ---------------------------------------------------------
-function postCodemJob(jobreq,selected) {
-    log('Sending to ' + selected + ' which now has ' + tcdStatus[selected].free_slots + ' free slots.');
+function postCodemJob(job,tcd) {
+    log('Sending to ' + tcd + ' which now has ' + tcdStatus[tcd].free_slots + ' free slots.');
     request({  
         method : 'POST',
-        url    : selected,
-        form   : JSON.stringify(jobreq) } ,
+        url    : tcd,
+        form   : JSON.stringify(job) } ,
         function(err, res, body) {
-            var job = JSON.parse(body);
-            log("Started codem job " + job.job_id + " belonging to job " + jobreq.job_id);
-            jobs[jobreq.job_id].codem_jobs.pending[ job.job_id ] = 1;
-            codemjob2job[job.job_id] = jobreq.job_id;
+            var codemjob = JSON.parse(body);
+            log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
+            jobs[job.job_id].add_tcd_job(job.format, codemjob);
+            codemjob2job[codemjob.job_id] = job.job_id;
         });
 }
 
@@ -205,18 +199,18 @@ function getFreeTranscoder() {
     var keys = Object.keys(tcdStatus);
     keys.sort( function(a,b) { 
         return tcdStatus[b].free_slots - tcdStatus[a].free_slots; });
-    var selected = keys[0];
-    if (selected && tcdStatus[selected].free_slots > 0) {
-        tcdStatus[selected].free_slots--;
-        return selected;
+    var tcd = keys[0];
+    if (tcd && tcdStatus[tcd].free_slots > 0) {
+        tcdStatus[tcd].free_slots--;
+        return tcd;
     } else
         return;
 }
 
 function handleJobQueue(responses) {
-    var jobreq,selected;
-    while ((selected=getFreeTranscoder()) && (jobreq=jobqueue.shift())) {
-        postCodemJob(jobreq, selected);
+    var job,tcd;
+    while ((tcd=getFreeTranscoder()) && (job=jobqueue.shift())) {
+        postCodemJob(job, tcd);
     }
 }
 
