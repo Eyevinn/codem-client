@@ -12,7 +12,9 @@
     "request": ">= 2.40.0",
     "fs-extra": "*",
     "fast-list": ">= 1.0.2",
-    "node-uuid": "*"
+    "node-uuid": "*",
+    "chokidar": ">= 0.8.4",
+    "node-ffprobe": ">= 1.2.2"
   },
   "devDependencies": {
     "should": "^4.0.4",

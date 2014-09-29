@@ -37,6 +37,10 @@ Install by using npm (http://npmjs.org/):
 The codem-manager takes a configuration file as argument with the -c flag. Example of configuration file:
 
     {
+        watch: {
+                   directory : '/tmp/incoming',
+                   profiles : [ '720p', '480p'],
+                   removesource : 1 },
         localdestination: '/tmp/transcode_out/',
         port: 8099,
         transcoderapi: {
@@ -71,6 +75,10 @@ The codem-manager takes a configuration file as argument with the -c flag. Examp
                  }
     }
 
+* `watch` A configuration of a watch folder.
+    * `directory` The directory to watch
+    * `profiles` Which profiles to use for transcoding (see profiles below)
+    * `removesource` If true - source file is removed after completed transcodings
 * `localdestination`  The local destination directory (must be NFS-mounted by the transcoder nodes).
 * `port` The port on which the manager listens (both for clients and transcoder nodes).
 * `transcoderapi` Configuration of transcoder nodes.

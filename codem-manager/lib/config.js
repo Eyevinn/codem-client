@@ -27,6 +27,10 @@ var opts = require('argsparser').parse();
 var fs = require('fs');
 
 var config = {
+    watch: {
+               directory : '/tmp/incoming',
+               profiles : [ '720p', '480p'],
+               removesource : 1 },
     localdestination: '/tmp/',
     port: 8099,
     transcoderapi: {

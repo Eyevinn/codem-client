@@ -28,7 +28,8 @@ var express = require('express')
    , FastList = require('fast-list')
    ,builder = require('xmlbuilder')
    ,   uuid = require('node-uuid')
-   ,    Job = require('./job');
+   ,    Job = require('./job')
+   ,watcher = require('./watcher');
 
 var config = require('./config').load();
 var server = null;
