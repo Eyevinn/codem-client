@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 var express = require('express')
    ,request = require('request')
-   ,     fs = require('fs')
+   ,     fs = require('fs-extra')
    , FastList = require('fast-list')
    ,builder = require('xmlbuilder')
    ,   uuid = require('node-uuid')
@@ -132,27 +132,50 @@ processPostedJob = function(postData, res) {
 
     var localsource;
     var localdest =  config.localdestination + '/';
-    var getsource = request(post.source);
-    var basename;
-    getsource.on('response', function(res) { 
-        var regmatch = res.headers['content-disposition'].match(/attachment; filename="?(([^".]+)\.(mp4|MP4))"?/);
-        basename=regmatch[2];
-        var suffix=regmatch[3]; // mp4 or MP4
-        if (!suffix) { return; }; //FIXME
+    if (post.source.match(/^http/)) {
+        var getsource = request(post.source);
+        var basename;
+        getsource.on('response', function(res) { 
+            log(res.headers);
+            var contentdisp = res.headers['content-disposition'];
+            if (contentdisp) {
+                var regmatch = contentdisp.match(/attachment; filename="?(([^".]+)\.(mp4|MP4))"?/);
+                basename=regmatch[2];
+            } else {
+                var path = res.req.path;
+                var regmatch = path.match(/([^.\/]+)\.(mp4|MP4)$/);
+                basename=regmatch[1];
+            }
+            localdest += basename + '/';
+            mkdirSync(localdest);
+            localsource = localdest + basename + '_orig.mp4';
+            log("Fetching file to " + localsource);
+            res.pipe(fs.createWriteStream(localsource));
+        });
+        getsource.on('end', function(){
+            createSMIL(localsource, basename, localdest);
+            enqueJobs({'job_id'           : job.job_id
+                       ,'source_file'     : localsource 
+                       ,'destination_dir' : localdest
+                       ,'formats'         : post.formats
+                       ,'file_basename'   : basename}); 
+        });
+    } else { //TODO Check the existence of localsource
+        localsource = post.source;
+        var regmatch = localsource.match(/([^.\/]+)\.(mp4|MP4)$/);
+        basename = regmatch[1];
         localdest += basename + '/';
         mkdirSync(localdest);
-        localsource = localdest + basename + '.mp4';
-        log("Fetching file to " + localsource);
-        res.pipe(fs.createWriteStream(localsource));
-    });
-    getsource.on('end', function(){
+        var orig = localdest + '/' + basename + '_orig.mp4'
+        log('Copying source to ' + orig);
+        fs.copy(localsource, orig);
         createSMIL(localsource, basename, localdest);
         enqueJobs({'job_id'           : job.job_id
                    ,'source_file'     : localsource 
                    ,'destination_dir' : localdest
                    ,'formats'         : post.formats
                    ,'file_basename'   : basename}); 
-    });
+    }
     var body = {};
     body['message'] = "Job enqueued";
     res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -251,7 +274,9 @@ function createSMIL(localsource,basename,destpath) {
         root.att('title', srcdata['title'] || basename);
 
         var rootsw = root.ele('body').ele('switch');
-        var el = rootsw.ele('video', {'height': srcdata['height'], 'width': srcdata['width'], 'src': basename + '.mp4'});
+        var el = rootsw.ele('video', {'height': srcdata['height'], 
+                                      'width': srcdata['width'], 
+                                      'src': basename + '_orig.mp4'});
         el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
         el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
 
