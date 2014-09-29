@@ -153,7 +153,7 @@ processPostedJob = function(postData, res) {
             res.pipe(fs.createWriteStream(localsource));
         });
         getsource.on('end', function(){
-            createSMIL(localsource, basename, localdest);
+            createSMIL(localsource, basename, localdest, post.formats);
             enqueJobs({'job_id'           : job.job_id
                        ,'source_file'     : localsource 
                        ,'destination_dir' : localdest
@@ -169,7 +169,7 @@ processPostedJob = function(postData, res) {
         var orig = localdest + '/' + basename + '_orig.mp4'
         log('Copying source to ' + orig);
         fs.copy(localsource, orig);
-        createSMIL(localsource, basename, localdest);
+        createSMIL(localsource, basename, localdest, post.formats);
         enqueJobs({'job_id'           : job.job_id
                    ,'source_file'     : localsource 
                    ,'destination_dir' : localdest
@@ -266,7 +266,7 @@ function getSourceData(probedata) {
     return srcdata;
 } 
 
-function createSMIL(localsource,basename,destpath) {
+function createSMIL(localsource,basename,destpath, formats) {
     var probe = require('node-ffprobe');
     probe(localsource, function(err, probedata) {
         var srcdata = getSourceData(probedata);
@@ -280,7 +280,10 @@ function createSMIL(localsource,basename,destpath) {
         el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
         el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
 
-        for (key in config.profile) {
+        var i;
+        for (i=0;i<formats.length; i++) {
+            var key = formats[i];
+            log("I shall smile to " + key);
             var p = config.profile[key];
             var h = p['height'];
             var w = p['width'];
