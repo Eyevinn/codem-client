@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 var request = require('request');
 
-var job = {  source      : 'http://localhost:8099/download/trailer.mp4'
+var job = {  source      : '/Users/fred/trailer.mp4'
+            ,removesource: 1
+           // source      : 'http://localhost:8099/download/trailer.mp4'
            , formats     : [ '720p', '360p' ]
            , destination : 'http://localhost:8099/upload/'}; //destination currently ignored
 

@@ -90,6 +90,7 @@ The HTTP API of codem-manager is as follows:
 
 Request: `POST /jobs`
     { source : "http://my.source.com/sample.mp4",
+      removesource : 0,
       formats     : [720p, 360p]
     }
 
@@ -97,7 +98,9 @@ Responses:
 * `202 Accepted` - Job accepted
 * Error handling to be implemented.
 
+source can be either a local path on the manager's disk, or a HTTP URL.
 Currently the codem-manager only transcodes to the `localdestination` path configured in the codem-manager.
+If removesource is set to a true value and source is on a local disk, the source file will be deleted when all transcodings have completed.
 
 ## License
 Codem-client is released under the MIT license.

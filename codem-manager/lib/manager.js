@@ -283,7 +283,6 @@ function createSMIL(localsource,basename,destpath, formats) {
         var i;
         for (i=0;i<formats.length; i++) {
             var key = formats[i];
-            log("I shall smile to " + key);
             var p = config.profile[key];
             var h = p['height'];
             var w = p['width'];
