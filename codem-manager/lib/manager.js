@@ -169,7 +169,10 @@ processPostedJob = function(postData, res) {
         mkdirSync(localdest);
         var orig = localdest + '/' + basename + '_orig.mp4'
         log('Copying source to ' + orig);
-        fs.copy(localsource, orig);
+        fs.copy(localsource, orig, function(err) {
+            // XXX What if error?
+            job.originalCopy = orig;
+        });
         createSMIL(localsource, basename, localdest, post.formats);
         enqueJobs({'job_id'           : job.job_id
                    ,'source_file'     : localsource 
