@@ -277,7 +277,7 @@ function createSMIL(localsource,basename,destpath, formats) {
         var rootsw = root.ele('body').ele('switch');
         var el = rootsw.ele('video', {'height': srcdata['height'], 
                                       'width': srcdata['width'], 
-                                      'src': basename + '_orig.mp4'});
+                                      'src': basename + '/' + basename + '_orig.mp4'});
         el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
         el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
 
@@ -287,7 +287,7 @@ function createSMIL(localsource,basename,destpath, formats) {
             var p = config.profile[key];
             var h = p['height'];
             var w = p['width'];
-            var src = basename + '_' + key + '.mp4';
+            var src = basename + '/' + basename + '_' + key + '.mp4';
             var vb = p['video'];
             var ab = p['audio'];
 
@@ -296,6 +296,6 @@ function createSMIL(localsource,basename,destpath, formats) {
             el.ele('param', {'name': 'audioBitrate', 'value': ab, 'valuetype': 'data'});
         }      
         var smilxml = rootsw.end({ pretty: true });
-        fs.writeFile(destpath + basename + ".smil", smilxml);
+        fs.writeFile(destpath + '/../' + basename + ".smil", smilxml);
     });
 }
