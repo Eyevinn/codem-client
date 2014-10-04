@@ -36,8 +36,8 @@ var config = {
     transcoderapi: {
         manager: 'localhost',   // How transcoder nodes can reach the manager
         transcoders: [
-            'http://localhost:8080',
-            'http://127.0.0.1:8080' 
+            'http://localhost:3080',
+            'http://127.0.0.1:3080' 
             ] 
     },
     profile: {

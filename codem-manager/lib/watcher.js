@@ -42,7 +42,7 @@ function processfile(path, probedata) {
     
     request({ method: 'POST', 
               url: 'http://localhost:' + config.port + '/jobs', 
-              form: JSON.stringify(job)}
+              form: job}
           , function(err, res, body) {
               console.log('I got answer ' + body);
           });

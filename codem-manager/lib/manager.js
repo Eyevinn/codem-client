@@ -42,57 +42,16 @@ var log = function(args) {
     console.log(args);
 }
 
-exports.launch = function(port) {
-    port = port ? port : config.port;
-    server = express();
-    server.post('/jobs',postNewJobs);
-    server.get('/jobs',getTranscoderStatus);
-    server.get('/',getTranscoderStatus);
-    server.put('/codem_notify', getCodemNotification);
-
-    server.use(express.static(__dirname + '/public',  // While developing -
-                {'index': false,                      // host files to transcode
-                 'setHeaders': function(res,path){res.attachment(path)}}));
-
-    server.listen(port,"localhost");
-    log("Codem manager listening on port " + port);
-    return server;
-}
-
 //------ getCodemNotification --------------------------------------------------
-Object.size = function(obj) {
-    var size = 0, key;
-    for (key in obj) {
-        if (obj.hasOwnProperty(key)) size++;
-    }
-    return size;
-};
-
-getCodemNotification = function(req, res) {
-    var putdata = "";
-    req.on('data',function(data,res){ putdata += data; });
-    req.on('end', function() {
-        var codemjob = JSON.parse(putdata);
-        var job_id = codemjob2job[codemjob.id];
-        if (job_id) {
-            jobs[job_id].update_tcd_job(codemjob);
-        }
-    });
-    res.setHeader('Content-Type','application/json; charset=utf-8');
-    res.end(JSON.stringify({answer:'thank you'}),'utf8'); //TODO what here?
-    //FIXME Having three transcoding profiles, the last (the sixth) notification is never taken care of.
+getCodemNotification = function(codemjob, callback) {
+    var job_id = codemjob2job[codemjob.id];
+    if (job_id)
+        jobs[job_id].update_tcd_job(codemjob);
+    callback();
 }
 
 //------ getTranscoderStatus ----------------------------------------------------
-getTranscoderStatus = function(req, res) {
-    _getTranscoderStatus(function(responses) {
-        var body = responses;
-        res.setHeader('Content-Type','application/json; charset=utf-8');
-        res.end(JSON.stringify(body), 'utf8');
-    });
-}
-
-function _getTranscoderStatus(callback) {
+function getTranscoderStatus(callback) {
     var responses = {} , gotten = 0;
     var transcoders = config.transcoderapi.transcoders;
     for (var i=0; i<transcoders.length; i++) {
@@ -110,13 +69,6 @@ function _getTranscoderStatus(callback) {
     }
 }
 
-//------ postNewJobs -----------------------------------------------------------
-postNewJobs = function(req, res) {
-    var postData = "";
-    req.on('data', function(data) { postData += data; });
-    req.on('end', function() { processPostedJob(postData, res); } );    
-}
-
 var mkdirSync = function (path) {
     try {
         fs.mkdirSync(path);
@@ -125,9 +77,7 @@ var mkdirSync = function (path) {
     }
 }
 
-processPostedJob = function(postData, res) {
-    log("Received POST:\n" + postData); 
-    var post = JSON.parse(postData);
+processPostedJob = function(post, callback) {
     var job = new Job(post);
     jobs[job.job_id] = job; //TODO Is this really the best way?
 
@@ -180,11 +130,7 @@ processPostedJob = function(postData, res) {
                    ,'formats'         : post.formats
                    ,'file_basename'   : basename}); 
     }
-    var body = {};
-    body['message'] = "Job enqueued";
-    res.setHeader('Content-Type','application/json; charset=utf-8');
-    res.statusCode = 202; //Job accepted
-    res.end(JSON.stringify(body), 'utf8');
+    callback();
 }
 
 enqueJobs = function(jobinfo) {
@@ -243,10 +189,14 @@ function handleJobQueue(responses) {
 
 function tick() {
     if (jobqueue.length)
-        _getTranscoderStatus(handleJobQueue);
+        getTranscoderStatus(handleJobQueue);
 }
  
 var timer = setInterval(tick, 5000);
+
+exports.getTranscoderStatus = getTranscoderStatus;
+exports.processPostedJob = processPostedJob;;
+exports.getCodemNotification = getCodemNotification;
 
 //------ SMIL creation ---------------------------------------------------------
 

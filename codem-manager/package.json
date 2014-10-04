@@ -8,13 +8,18 @@
     "codem-manager": "./bin/codem-manager"
   },
   "dependencies": {
-    "express": "~4.2.0",
-    "request": ">= 2.40.0",
-    "fs-extra": "*",
-    "fast-list": ">= 1.0.2",
-    "node-uuid": "*",
+    "body-parser": "^1.9.0",
     "chokidar": ">= 0.8.4",
-    "node-ffprobe": ">= 1.2.2"
+    "express": "~4.9.x",
+    "fast-list": ">= 1.0.2",
+    "fs-extra": "0.12.*",
+    "jade": "^1.7.0",
+    "morgan": "1.3.*",
+    "nib": "1.0.*",
+    "node-ffprobe": ">= 1.2.2",
+    "node-uuid": "1.4.*",
+    "request": ">= 2.40.0",
+    "stylus": "0.49.*"
   },
   "devDependencies": {
     "should": "^4.0.4",

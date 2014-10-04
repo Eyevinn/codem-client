@@ -1,3 +1,2 @@
 #!/usr/bin/env node
-var manager = require('../lib/manager.js');
-manager.launch();
+require('../app.js');

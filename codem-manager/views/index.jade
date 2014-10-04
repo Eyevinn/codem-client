@@ -1,0 +1,21 @@
+extends layout
+
+block content
+  header
+    h1= title
+  .container
+    .main-content
+        table
+          thead
+            tr
+              th Transcoder
+              th Free
+              th Max
+          tbody
+            each val,transcoder in status
+              tr
+                td=transcoder
+                td=val.max_slots
+                td=val.free_slots
+  footer
+    p Developed by Eyevinn
