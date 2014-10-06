@@ -77,6 +77,19 @@ var mkdirSync = function (path) {
     }
 }
 
+// getJobs
+// get an array of jobs sorted by createTS
+function getJobs(callback) {
+    var keys = Object.keys(jobs);
+    keys.sort( function(a,b) { 
+        return jobs[b].createTS - jobs[a].createTS; 
+    });
+    var jobarray = [];
+    for (var i=0; i<keys.length; i++)
+        jobarray.push(jobs[keys[i]]);
+    callback(jobarray);
+}
+
 processPostedJob = function(post, callback) {
     var job = new Job(post);
     jobs[job.job_id] = job; //TODO Is this really the best way?
@@ -195,6 +208,7 @@ function tick() {
 var timer = setInterval(tick, 5000);
 
 exports.getTranscoderStatus = getTranscoderStatus;
+exports.getJobs = getJobs;;
 exports.processPostedJob = processPostedJob;;
 exports.getCodemNotification = getCodemNotification;
 

@@ -8,14 +8,21 @@ block content
         table
           thead
             tr
-              th Transcoder
-              th Free
-              th Max
+              th Source
+              th Transcodings
           tbody
-            each val,transcoder in status
+            each job,index in jobarray
               tr
-                td=transcoder
-                td=val.max_slots
-                td=val.free_slots
+                td=job.source
+                td
+                  table
+                    thead
+                    tbody
+                      each tcd_job,format in job.tcd_job
+                        tr
+                          td=format
+                          td=tcd_job.progress
+                          td=tcd_job.status
+                  
   footer
     p Developed by Eyevinn
