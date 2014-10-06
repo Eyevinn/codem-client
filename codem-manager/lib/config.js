@@ -29,7 +29,7 @@ var fs = require('fs');
 var config = {
     watch: {
                directory : '/tmp/incoming',
-               profiles : [ '720p', '480p'],
+               profiles : [ '540p', '360p', '270p'],
                removesource : 1 },
     localdestination: '/tmp/',
     port: 8099,
@@ -41,42 +41,28 @@ var config = {
             ] 
     },
     profile: {
-        '720p': {
-                  width: 1280,
-                  height: 720,
-                  video: '1200k',
-                  audio: '128k',
-                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48' 
-              },
-        '480p': {
-                  width: 854,
-                  height: 480,
-                  video: '1000k',
-                  audio: '64k',
-                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+        '540p': {
+                  width: 960,
+                  height: 540,
+                  video: '3500000',
+                  audio: '96000',
+                  options: '-threads 0 -s 960x540 -strict experimental -acodec aac -ab 96k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 3500k' 
               },
         '360p': {
                   width: 640,
                   height: 360,
-                  video: '820k',
-                  audio: '64k',
-                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+                  video: '1200000',
+                  audio: '64000',
+                  options: '-threads 0 -s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 1200k'
               },
-        '240p': {
-                  width: 426,
-                  height: 240,
-                  video: '600k',
-                  audio: '64k',
-                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
-              },
-        '160p': {
-                  width: 284,
-                  height: 160,
-                  video: '300k',
-                  audio: '46k',
-                  options: '-strict experimental -acodec aac -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48'
+        '270p': {
+                  width: 480,
+                  height: 270,
+                  video: '400000',
+                  audio: '64000',
+                  options: '-threads 0 -s 284x160 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -vprofile main -g 48 -b:v 400k'
               }
-             }
+    }
 };
 
 var loadedConfig = null;
