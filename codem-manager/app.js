@@ -15,7 +15,7 @@ function compile(str, path) {
 }
 
 // View engine setup
-app.set('views', './views');
+app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.set('port', 8099); //TODO read config
 
