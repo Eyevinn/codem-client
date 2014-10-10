@@ -90,6 +90,16 @@ function getJobs(callback) {
     callback(jobarray);
 }
 
+function noOfFreeSlots(callback) {
+    getTranscoderStatus(function(tcd) {
+        var sum = Object.keys(tcd).reduce(
+            function(a,b){
+                return tcd[a].free_slots + tcd[b].free_slots;
+            });
+        callback(sum);
+    });
+}
+
 processPostedJob = function(post, callback) {
     var job = new Job(post);
     jobs[job.job_id] = job; //TODO Is this really the best way?
@@ -211,6 +221,7 @@ exports.getTranscoderStatus = getTranscoderStatus;
 exports.getJobs = getJobs;;
 exports.processPostedJob = processPostedJob;;
 exports.getCodemNotification = getCodemNotification;
+exports.noOfFreeSlots = noOfFreeSlots;
 
 //------ SMIL creation ---------------------------------------------------------
 

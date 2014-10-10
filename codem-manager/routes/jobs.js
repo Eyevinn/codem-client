@@ -8,4 +8,16 @@ router.route('/').post( function(req, res) {
     });
 });
 
+router.route('/free_slots').get( function(req, res) {
+    mgr.noOfFreeSlots(function(n) {
+        if (req.accepts('text/html')) {
+            res.render('freeslots',{free : n.toString()});
+        } else if (req.accepts('application/json')) {
+            res.json(n.toString());
+        } else if (req.accepts('text/plain')) {
+            res.end(n.toString() + "\n");
+        }
+    });
+});
+
 module.exports = router;
