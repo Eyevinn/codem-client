@@ -35,7 +35,6 @@ var config = require('./config').load();
 var server = null;
 var jobqueue = new FastList();
 var tcdStatus = {};
-var jobs = {};           // One "job" may contain multiple codem jobs
 var codemjob2job = {};   // A mapping from codem jobs to our "outer" job
 
 var log = function(args) {
@@ -46,7 +45,7 @@ var log = function(args) {
 getCodemNotification = function(codemjob, callback) {
     var job_id = codemjob2job[codemjob.id];
     if (job_id)
-        jobs[job_id].update_tcd_job(codemjob);
+        Job.getJob(job_id).update_tcd_job(codemjob);
     callback();
 }
 
@@ -77,17 +76,8 @@ var mkdirSync = function (path) {
     }
 }
 
-// getJobs
-// get an array of jobs sorted by createTS
 function getJobs(callback) {
-    var keys = Object.keys(jobs);
-    keys.sort( function(a,b) { 
-        return jobs[b].createTS - jobs[a].createTS; 
-    });
-    var jobarray = [];
-    for (var i=0; i<keys.length; i++)
-        jobarray.push(jobs[keys[i]]);
-    callback(jobarray);
+    Job.getJobs(callback);
 }
 
 function noOfFreeSlots(callback) {
@@ -101,8 +91,8 @@ function noOfFreeSlots(callback) {
 }
 
 processPostedJob = function(post, callback) {
-    var job = new Job(post);
-    jobs[job.job_id] = job; //TODO Is this really the best way?
+    var job = Job.create(post);
+    console.log("Created job " + job);
 
     var localsource;
     var localdest =  config.localdestination + '/';
@@ -144,7 +134,7 @@ processPostedJob = function(post, callback) {
         log('Copying source to ' + orig);
         fs.copy(localsource, orig, function(err) {
             // XXX What if error?
-            job.originalCopy = orig;
+            job.setOriginalCopy(orig);
         });
         createSMIL(localsource, basename, localdest, post.formats);
         enqueJobs({'job_id'           : job.job_id
@@ -186,7 +176,7 @@ function postCodemJob(job,tcd) {
         function(err, res, body) {
             var codemjob = JSON.parse(body);
             log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
-            jobs[job.job_id].add_tcd_job(job.format, codemjob);
+            Job.getJob(job.job_id).add_tcd_job(job.format, codemjob);
             codemjob2job[codemjob.job_id] = job.job_id;
         });
 }
