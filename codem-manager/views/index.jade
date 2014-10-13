@@ -18,9 +18,9 @@ block content
                   table
                     thead
                     tbody
-                      each tcd_job,format in job.tcd_job
+                      each tcd_job in job.tcd_job
                         tr
-                          td=format
+                          td=tcd_job.format
                           td=tcd_job.progress
                           td=tcd_job.status
                   
