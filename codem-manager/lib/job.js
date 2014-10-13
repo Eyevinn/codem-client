@@ -2,11 +2,10 @@ var uuid = require('node-uuid'),
     fs = require('fs'),
     mongoose = require('mongoose');
 
-var credentials = require('../credentials'); //XXX necessary?
 var db = mongoose.connection;
 
 var haveDB = false;
-db.open(credentials.mongo.connectionString, 
+db.open('mongodb://localhost/codem', //TODO Put in a credentials file
         { server: {socketOptions: {keepAlive: 1}}},
         function(err) {
             if (err) { console.log(err) }
