@@ -3,7 +3,8 @@ var mgr = require('../lib/manager');
 
 /* GET home page. */
 router.route('/').get( function(req, res) {
-    mgr.getJobs(function(jobarray) {
+    mgr.getJobs(function(err,jobarray) {
+        // TODO Handle error
         if (req.accepts('text/html')) {
             res.render('index', { title: 'Job Status', jobarray: jobarray });
         } else {

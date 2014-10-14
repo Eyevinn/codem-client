@@ -45,27 +45,70 @@ jobSchema.statics.create = function(data) {
     job.job_id = job._id;
     if (haveDB) {
         job.save();
+    } else {
+        jobs[job._id] = job;
     }
-    jobs[job._id] = job;
     return job;
 }
 
 jobSchema.statics.getJobs = function(callback) {
-    var keys = Object.keys(jobs);
-    keys.sort( function(a,b) { 
-        return jobs[b].createTS - jobs[a].createTS; 
-    });
-    var jobarray = [];
-    for (var i=0; i<keys.length; i++)
-        jobarray.push(jobs[keys[i]]);
-    if (callback)
-        callback(jobarray);
-    else 
-        return jobarray;
+    if (haveDB) {
+        Job.find().sort({createTS:'desc'}).exec(callback);
+    } else {
+        var keys = Object.keys(jobs);
+        keys.sort( function(a,b) { 
+            return jobs[b].createTS - jobs[a].createTS; 
+        });
+        var jobarray = [];
+        for (var i=0; i<keys.length; i++)
+            jobarray.push(jobs[keys[i]]);
+        callback(null,jobarray);
+    }
 }
 
-jobSchema.statics.getJob = function(job_id) {
-    return jobs[job_id];
+jobSchema.statics.add_tcd_job = function(job_id, format, data) {
+    data.format = format;  //XXX Does this change data on the outside?
+    if (haveDB) {
+        Job.update({job_id : job_id},
+                   { $push: { tcd_job: {
+                                     format:   data.format,
+                                     job_id:   data.job_id,
+                                     status:   data.status,
+                                     progress: data.progress,
+                                     duration: data.duration,
+                                     filesize: data.filesize,
+                                     message:  data.message
+                                 }
+                      }
+                }).exec();
+    } else {
+        jobs[job_id].tcd_job.push(data);
+    }
+    //this.tcd2format[tcd_job.job_id] = format;
+    console.log("I created job " + format + " for source " + this.source);
+    return data.job_id; // XXX  codem uses job_id when creating. not id
+}
+
+jobSchema.statics.update_tcd_job = function(job_id, tcd_job) {
+    if (haveDB) {
+        // TODO
+    } else {
+        var job = jobs[job_id];
+        if (!tcd_job.job_id) 
+            tcd_job.job_id = tcd_job.id; // XXX When sending notification, codem uses id, not job_id
+        var index = -1;
+        for (var i=0 ; i<job.tcd_job.length ; i++) {
+            if (job.tcd_job[i].job_id == tcd_job.job_id) {
+                index = i; break;
+            }
+        }
+        tcd_job.format = job.tcd_job[index].format;
+        job.tcd_job[index] = tcd_job;
+        console.log("I updated job " + tcd_job.format + " for source " + job.source);
+        if (job.isDone() && job.removesource)
+            job.remove_source();
+        return tcd_job.job_id;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -75,44 +118,6 @@ jobSchema.statics.getJob = function(job_id) {
 jobSchema.methods.setOriginalCopy = function(path) {
     this.originalCopy = path;
     return this;
-}
-
-jobSchema.methods.add_tcd_job = function(format, data) {
-    data.format = format;  //XXX Does this change data on the outside?
-    this.tcd_job.push(data);
-    //this.tcd2format[tcd_job.job_id] = format;
-    console.log("I created job " + format + " for source " + this.source);
-//    JobDB.update({job_id : this.job_id},
-//            { $push: { tcd_job: {
-//                                    format:   format,
-//                                    job_id:   tcd_job.job_id,
-//                                    status:   tcd_job.status,
-//                                    progress: tcd_job.progress,
-//                                    duration: tcd_job.duration,
-//                                    filesize: tcd_job.filesize,
-//                                    message:  tcd_job.message
-//                                }
-//                     }
-//            }).exec();
-//            
-    return data.job_id; // XXX  codem uses job_id when creating. not id
-}
-
-jobSchema.methods.update_tcd_job = function(tcd_job) {
-    if (!tcd_job.job_id) 
-        tcd_job.job_id = tcd_job.id; // XXX When sending notification, codem uses id, not job_id
-    var index = -1;
-    for (var i=0 ; i<this.tcd_job.length ; i++) {
-        if (this.tcd_job[i].job_id == tcd_job.job_id) {
-            index = i; break;
-        }
-    }
-    tcd_job.format = this.tcd_job[index].format;
-    this.tcd_job[index] = tcd_job;
-    console.log("I updated job " + tcd_job.format + " for source " + this.source);
-    if (this.isDone() && this.removesource)
-        this.remove_source();
-    return tcd_job.job_id;
 }
 
 jobSchema.methods.remove_source = function() {
@@ -152,6 +157,6 @@ jobSchema.methods.toString = function() {
 //------------------------------------------------------------------------------
 
 var jobs = {};
-var Job = mongoose.model('Job', jobSchema);
+var Job = mongoose.model('job', jobSchema);
 
 module.exports = Job;

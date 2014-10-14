@@ -45,7 +45,7 @@ var log = function(args) {
 getCodemNotification = function(codemjob, callback) {
     var job_id = codemjob2job[codemjob.id];
     if (job_id)
-        Job.getJob(job_id).update_tcd_job(codemjob);
+        Job.update_tcd_job(job_id,codemjob);
     callback();
 }
 
@@ -176,7 +176,7 @@ function postCodemJob(job,tcd) {
         function(err, res, body) {
             var codemjob = JSON.parse(body);
             log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
-            Job.getJob(job.job_id).add_tcd_job(job.format, codemjob);
+            Job.add_tcd_job(job.job_id, job.format, codemjob);
             codemjob2job[codemjob.job_id] = job.job_id;
         });
 }
