@@ -83,9 +83,7 @@ function getJobs(callback) {
 function noOfFreeSlots(callback) {
     getTranscoderStatus(function(tcd) {
         var sum = Object.keys(tcd).reduce(
-            function(a,b){
-                return tcd[a].free_slots + tcd[b].free_slots;
-            });
+            function(s,key){ return s + tcd[key].free_slots; },0);
         callback(sum);
     });
 }
