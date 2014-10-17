@@ -8,8 +8,11 @@ var haveDB = false;
 db.open('mongodb://localhost/codem', //TODO Put in a credentials file
         { server: {socketOptions: {keepAlive: 1}}},
         function(err) {
-            if (err) { console.log(err) }
-            else { haveDB = true; }
+            if (err) { 
+                //console.log(err);
+            } else { 
+                haveDB = true; 
+            }
         });
 
 // Mongoose Schemas ------------------------------------------------------------
@@ -92,6 +95,9 @@ jobSchema.statics.add_tcd_job = function(job_id, format, data) {
 jobSchema.statics.update_tcd_job = function(job_id, tcd_job) {
     if (haveDB) {
         // TODO
+        // First we have to get the tcd_job array
+        // Then we modify one of them
+        // Then we set the array in the db
     } else {
         var job = jobs[job_id];
         if (!tcd_job.job_id) 
