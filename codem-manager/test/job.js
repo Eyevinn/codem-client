@@ -2,21 +2,23 @@ var should = require('should'),
     Job = require('../lib/job');
 
 describe('Job', function() {
+
     var source = '/dir/sourcefile.mp4';
     var formats = [ '720p', '540p' ];
-    job = Job.create( { source : source,
+    var job = Job.create( { source : source,
                         formats : formats,
                         removesource : 1 } );
+
     describe('properties', function() {
         it('should have job_id', function() {
             job.should.have.property('job_id');
         });
         // Verify job_id?
-        it('should have source', function() {
+        it('should have source = ' + source, function() {
             job.should.have.property('source');
             job.source.should.equal(source);
         });
-        it('should have removesource', function() {
+        it('should have removesource = true', function() {
             job.should.have.property('removesource');
             job.removesource.should.equal(true);
         });
@@ -38,16 +40,21 @@ describe('Job', function() {
     });
 
 
-    function validate_tcd_job(tcd_job, tcd_job_data) {
+    function validate_tcd_job(tcd_job, tcd_job_data,async) {
         var keys = Object.keys(tcd_job_data);
         for (var i=0;i<keys.length;i++) {
-            (function(i){
-                it('should have property ' + keys[i] + ' = ' + tcd_job_data[keys[i]], 
-                    function() {
-                        tcd_job.should.have.property(keys[i]);
-                        tcd_job[keys[i]].should.equal(tcd_job_data[keys[i]]);
-                    });
-            })(i);
+            if (async) {
+                (function(i){
+                    it('should have property ' + keys[i] + ' = ' + tcd_job_data[keys[i]], 
+                        function() {
+                            tcd_job.should.have.property(keys[i]);
+                            tcd_job[keys[i]].should.equal(tcd_job_data[keys[i]]);
+                        });
+                })(i);
+            } else {
+                tcd_job.should.have.property(keys[i]);
+                tcd_job[keys[i]].should.equal(tcd_job_data[keys[i]]);
+            }
         }
     }
 
@@ -66,11 +73,7 @@ describe('Job', function() {
                 job.tcd_job.length.should.equal(1);
             });
             var tcd_job = job.tcd_job[0];
-            validate_tcd_job(job.tcd_job[0], tcd_job_data);
-            it('should have property format=' + formats[0], function() {
-                tcd_job.should.have.property('format');
-                tcd_job.format.should.equal(formats[0]);
-            });
+            validate_tcd_job(job.tcd_job[0], tcd_job_data, 1);
         });
         describe('Update transcoder job', function() {
             var new_tcd_job_data = {
@@ -82,15 +85,8 @@ describe('Job', function() {
                 message : 'I have a message'
             };
             Job.update_tcd_job(job.job_id, new_tcd_job_data);
-            it('job should still have one transcoder job', function() {
-                job.tcd_job.length.should.equal(1);
-            });
-            var tcd_job = job.tcd_job[0];
-            validate_tcd_job(job.tcd_job[0], new_tcd_job_data);
-            it('should still have property format=' + formats[0], function() {
-                tcd_job.should.have.property('format');
-                tcd_job.format.should.equal(formats[0]);
-            });
+            var newjob = Job.get(job.job_id);
+            validate_tcd_job(newjob.tcd_job[0], new_tcd_job_data, 1);
         });
     });
 });

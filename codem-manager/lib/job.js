@@ -2,16 +2,17 @@ var uuid = require('node-uuid'),
     fs = require('fs'),
     mongoose = require('mongoose');
 
-var db = mongoose.connection;
+//var db = mongoose.connection;
 
-var haveDB = false;
-db.open('mongodb://localhost/codem', //TODO Put in a credentials file
+var haveDB = true;
+mongoose.connect('mongodb://localhost/codem', //TODO Put in a credentials file
         { server: {socketOptions: {keepAlive: 1}}},
         function(err) {
             if (err) { 
-                //console.log(err);
+                console.log(err);
+                haveDB = false;
             } else { 
-                haveDB = true; 
+                console.log("DB connection open");
             }
         });
 
@@ -41,80 +42,63 @@ var jobSchema = mongoose.Schema({
 // Must occur before model creation
 
 // XXX Cannot use "new" outside this module?
-// Since I don't want to expose any db dependency.
+// Since "new" requires an addition of save(), and I don't want to expose any db dependency.
+// BUT - create is already defined by mongoose... change this name?
 jobSchema.statics.create = function(data) {
     data.createTS = new Date;
     var job = new Job(data);
     job.job_id = job._id;
-    if (haveDB) {
-        job.save();
-    } else {
-        jobs[job._id] = job;
-    }
+    job.save();
+    jobs[job.job_id] = job;
     return job;
 }
 
+jobSchema.statics.get = function(job_id) {
+    // We assume this is what's in the db
+    return jobs[job_id];
+}
+
 jobSchema.statics.getJobs = function(callback) {
-    if (haveDB) {
-        Job.find().sort({createTS:'desc'}).exec(callback);
-    } else {
-        var keys = Object.keys(jobs);
-        keys.sort( function(a,b) { 
-            return jobs[b].createTS - jobs[a].createTS; 
-        });
-        var jobarray = [];
-        for (var i=0; i<keys.length; i++)
-            jobarray.push(jobs[keys[i]]);
-        callback(null,jobarray);
-    }
+    var keys = Object.keys(jobs);
+    keys.sort( function(a,b) { 
+        return jobs[b].createTS - jobs[a].createTS; 
+    });
+    var jobarray = [];
+    for (var i=0; i<keys.length; i++)
+        jobarray.push(jobs[keys[i]]);
+    callback(null,jobarray);
 }
 
 jobSchema.statics.add_tcd_job = function(job_id, format, data) {
-    data.format = format;  //XXX Does this change data on the outside?
-    if (haveDB) {
-        Job.update({job_id : job_id},
-                   { $push: { tcd_job: {
-                                     format:   data.format,
-                                     job_id:   data.job_id,
-                                     status:   data.status,
-                                     progress: data.progress,
-                                     duration: data.duration,
-                                     filesize: data.filesize,
-                                     message:  data.message
-                                 }
-                      }
-                }).exec();
-    } else {
-        jobs[job_id].tcd_job.push(data);
-    }
+    data.format = format;
+    jobs[job_id].tcd_job.push(new TCDJob(data));
     //this.tcd2format[tcd_job.job_id] = format;
-    console.log("I created job " + format + " for source " + this.source);
+    console.log("I created tcd job " + format + " for source " + this.source);
     return data.job_id; // XXX  codem uses job_id when creating. not id
 }
 
 jobSchema.statics.update_tcd_job = function(job_id, tcd_job) {
-    if (haveDB) {
-        // TODO
-        // First we have to get the tcd_job array
-        // Then we modify one of them
-        // Then we set the array in the db
-    } else {
-        var job = jobs[job_id];
-        if (!tcd_job.job_id) 
-            tcd_job.job_id = tcd_job.id; // XXX When sending notification, codem uses id, not job_id
+
+    function update_tcd_job_array(array, tcd_job) {
         var index = -1;
-        for (var i=0 ; i<job.tcd_job.length ; i++) {
-            if (job.tcd_job[i].job_id == tcd_job.job_id) {
+        for (var i=0 ; i<array.length ; i++) {
+            if (array[i].job_id == tcd_job.job_id) {
                 index = i; break;
             }
         }
-        tcd_job.format = job.tcd_job[index].format;
-        job.tcd_job[index] = tcd_job;
-        console.log("I updated job " + tcd_job.format + " for source " + job.source);
-        if (job.isDone() && job.removesource)
-            job.remove_source();
-        return tcd_job.job_id;
+        tcd_job.format = array[index].format;
+        array[index] = tcd_job;
+        return array;
     }
+
+    if (!tcd_job.job_id) 
+        tcd_job.job_id = tcd_job.id; // XXX When sending notification, codem uses id, not job_id
+    var job = jobs[job_id];
+    job.tcd_job = update_tcd_job_array(job.tcd_job, tcd_job);
+    console.log("I updated job " + tcd_job.format + " for source " + job.source);
+    if (job.isDone() && job.removesource)
+        job.remove_source();
+    return tcd_job.job_id;
 }
 
 //------------------------------------------------------------------------------
@@ -149,11 +133,10 @@ jobSchema.methods.remove_source = function() {
 }
 
 jobSchema.methods.isDone = function() {
-    var done = true;
     for (var i=0; i<this.tcd_job.length; i++)
         if (this.tcd_job[i].status != 'success')
-            done = false;
-    return done;
+            return false;
+    return true;
 }
 
 jobSchema.methods.toString = function() {
@@ -162,7 +145,21 @@ jobSchema.methods.toString = function() {
 
 //------------------------------------------------------------------------------
 
-var jobs = {};
 var Job = mongoose.model('job', jobSchema);
+var TCDJob = mongoose.model('tcd_job', tcd_jobSchema);
+Job.on('error', function(err) {console.log("NO DB");haveDB = false;});
+
+// Load all jobs from the database
+var jobs = {};
+Job.find().exec(
+        function(err,docs) {
+            if (err) {
+                haveDB = false;
+            } else {
+                for (var i=0; i<docs.length; i++) {
+                    jobs[docs[i]._id] = docs[i];
+                }
+            }
+        });
 
 module.exports = Job;
