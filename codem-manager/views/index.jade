@@ -5,7 +5,7 @@ block content
     h1= title
   .container
     .main-content
-        table
+        table.jobtable
           thead
             tr
               th Time
@@ -14,18 +14,21 @@ block content
           tbody
             each job,index in jobarray
               tr
-                td=job.createTS
-                td=job.source
+                td.createTS #{moment(job.createTS).format("YYYY-MM-DD HH:mm")}
+                if job.source.match(/\/([^\/]*$)/)[1].length>25
+                  td.source #{job.source.match(/\/([^\/]*$)/)[1].substr(0,22) + '...'}
+                else
+                  td.source #{job.source.match(/\/([^\/]*$)/)[1]}
                 td
-                  table
+                  table.transcodingtable
                     thead
                     tbody
                       each tcd_job in job.tcd_job
                         tr
-                          td=tcd_job.format
-                          td=tcd_job.progress
-                          td=tcd_job.status
-                          td=tcd_job.message
+                          td.format=tcd_job.format
+                          td.progress #{tcd_job.progress * 100}%
+                          td.status=tcd_job.status
+                          td.message=tcd_job.message
                   
   footer
     p Developed by Eyevinn

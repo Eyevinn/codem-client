@@ -1,4 +1,4 @@
-@import url("http://fonts.googleapis.com/css?family=Quicksand");
+@import url("http://fonts.googleapis.com/css?family=Inconsolata");
 html,
 body,
 div,
@@ -91,31 +91,71 @@ a img {
   border: none;
 }
 body {
-  font-family: 'Quicksand';
+  font-family: 'Inconsolata';
   background-color: #faf9f0;
   color: #444;
 }
 header {
-  font-family: 'Quicksand';
+  font-family: 'Inconsolata';
   padding: 50px 10px;
   color: #fff;
-  font-size: 25px;
+  font-size: 45px;
   text-align: center;
-  background-color: #fa5b4d;
-  border-bottom: 1px solid #df1806;
-  text-shadow: 0px -1px 0px #df1806;
+  background-color: #41b6e6;
+  border-bottom: 3px solid #1888b6;
+  text-shadow: 0px -1px 0px #1888b6;
 }
 .container {
   width: 800px;
-  margin: 50px auto;
+  margin: 40px auto;
   overflow: hidden;
 }
 .main-content {
   float: left;
-  width: 600px;
+  width: 800px;
 }
 .main-content p {
   margin-bottom: 20px;
+}
+.jobtable {
+  width: 1000px;
+  font-size: 18px;
+  font-family: Inconsolata;
+}
+.jobtable td {
+  vertical-align: top;
+  border-top: 1px dotted #000;
+}
+.jobtable td.createTS {
+  width: 100px;
+}
+.jobtable td.source {
+  width: 200px;
+  padding-right: 10px;
+}
+.transcodingtable {
+  color: #000;
+}
+.transcodingtable thead {
+  color: #000;
+}
+.transcodingtable td {
+  border-top: none;
+}
+.transcodingtable td.format {
+  width: 40px;
+}
+.transcodingtable td.progress {
+  width: 30px;
+  text-align: right;
+}
+.transcodingtable td.status {
+  width: 100px;
+  text-align: left;
+  padding-left: 10px;
+}
+.transcodingtable td.message {
+  width: 400px;
 }
 .sidebar {
   float: left;
@@ -136,7 +176,7 @@ header {
   box-shadow: inset 0px 0px 0px 3px rgba(255,255,255,0.8), 0px 3px 0px -2px rgba(0,0,0,0.1);
 }
 .sidebar .widget h1 {
-  font-family: 'Quicksand';
+  font-family: 'Inconsolata';
   margin: 13px 10px 4px;
   padding-bottom: 10px;
   border-bottom: 1px dotted #ddd;

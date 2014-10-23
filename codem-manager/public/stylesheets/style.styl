@@ -1,36 +1,67 @@
 @import 'nib'
-@import url('http://fonts.googleapis.com/css?family=Quicksand')
+@import url('http://fonts.googleapis.com/css?family=Inconsolata')
 global-reset()
 
-main-color = #fa5b4d
+main-color = #41B6E6 //Eyevinn Blue
 background-color = #faf9f0
 
 body
-  font-family 'Quicksand'
+  font-family 'Inconsolata'
   background-color background-color
   color #444
 
 header
-  font-family 'Quicksand'
+  font-family 'Inconsolata'
   padding 50px 10px
   color #fff
-  font-size 25px
+  font-size 45px
   text-align center
   background-color main-color
-  border-bottom 1px solid darken(main-color, 30%)
+  border-bottom 3px solid darken(main-color, 30%)
   text-shadow 0px -1px 0px darken(main-color, 30%)
 
 .container
   width 800px
-  margin 50px auto
+  margin 40px auto
   overflow hidden
 
 .main-content
   float left
-  width 600px
+  width 800px
 
   p
     margin-bottom 20px
+
+.jobtable
+  width 1000px
+  td
+    vertical-align top
+    border-top 1px dotted black
+  td.createTS
+    width 100px
+  td.source
+    width 200px
+    padding-right 10px
+  font-size 18px
+  font-family Inconsolata
+
+.transcodingtable
+  thead
+    color black
+  color black
+  td
+    border-top none
+  td.format
+    width 40px
+  td.progress
+    width 30px
+    text-align right
+  td.status
+    width 100px
+    text-align left
+    padding-left 10px
+  td.message
+    width 400px
 
 .sidebar
   float left
@@ -50,7 +81,7 @@ header
     box-shadow inset 0px 0px 0px 3px rgba(#fff, 0.8), 0px 3px 0px -2px rgba(#000, 0.1)
 
     h1
-      font-family 'Quicksand'
+      font-family 'Inconsolata'
       margin 13px 10px 4px
       padding-bottom 10px
       border-bottom 1px dotted #ddd

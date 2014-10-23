@@ -52,7 +52,7 @@ jobSchema.statics.getJobs = function(callback) {
     var jobarray = [];
     for (var i=0; i<keys.length; i++) {
         jobarray.push(jobs[keys[i]]);
-        jobarray[i].tcd_job = job2tcd[jobs[keys[i]].job_id];
+        jobarray[i].tcd_job = job2tcd[jobs[keys[i]].job_id] || [];
     }
     callback(null,jobarray);
 }
