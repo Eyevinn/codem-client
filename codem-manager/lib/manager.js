@@ -28,25 +28,24 @@ var express = require('express')
    , FastList = require('fast-list')
    ,builder = require('xmlbuilder')
    ,   uuid = require('node-uuid')
-   ,    Job = require('./job')
+   ,  Model = require('./job')
    ,watcher = require('./watcher');
 
+
+var Job = Model.Job;
+var TCD = Model.TCD;
 var config = require('./config').load();
 var server = null;
 var jobqueue = new FastList();
 var tcdStatus = {};
-var codemjob2job = {};   // A mapping from codem jobs to our "outer" job
 
 var log = function(args) {
     console.log(args);
 }
 
 //------ getCodemNotification --------------------------------------------------
-getCodemNotification = function(codemjob, callback) {
-    var job_id = codemjob2job[codemjob.id];
-    if (job_id)
-        Job.update_tcd_job(job_id,codemjob);
-    callback();
+getCodemNotification = function(codemdata, callback) {
+    TCD.update_tcd(codemdata,callback);
 }
 
 //------ getTranscoderStatus ----------------------------------------------------
@@ -89,7 +88,7 @@ function noOfFreeSlots(callback) {
 }
 
 processPostedJob = function(post, callback) {
-    var job = Job.create(post);
+    var job = Job.create_job(post);
     console.log("Created job " + job);
 
     var localsource;
@@ -173,9 +172,10 @@ function postCodemJob(job,tcd) {
         form   : JSON.stringify(job) } ,
         function(err, res, body) {
             var codemjob = JSON.parse(body);
+            codemjob.format = job.format;
+            codemjob.master_id = job.job_id;
             log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
-            Job.add_tcd_job(job.job_id, job.format, codemjob);
-            codemjob2job[codemjob.job_id] = job.job_id;
+            TCD.create_tcd(codemjob);
         });
 }
 

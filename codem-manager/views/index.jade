@@ -8,11 +8,13 @@ block content
         table
           thead
             tr
+              th Time
               th Source
               th Transcodings
           tbody
             each job,index in jobarray
               tr
+                td=job.createTS
                 td=job.source
                 td
                   table
@@ -23,6 +25,7 @@ block content
                           td=tcd_job.format
                           td=tcd_job.progress
                           td=tcd_job.status
+                          td=tcd_job.message
                   
   footer
     p Developed by Eyevinn

@@ -1,13 +1,15 @@
 var should = require('should'),
-    Job = require('../lib/job');
+    Model = require('../lib/job');
+var Job = Model.Job,
+    TCD = Model.TCD;
 
 describe('Job', function() {
 
     var source = '/dir/sourcefile.mp4';
     var formats = [ '720p', '540p' ];
-    var job = Job.create( { source : source,
-                        formats : formats,
-                        removesource : 1 } );
+    var job = Job.create_job( { source : source,
+                               formats : formats,
+                               removesource : 1 } );
 
     describe('properties', function() {
         it('should have job_id', function() {
@@ -66,28 +68,29 @@ describe('Job', function() {
                 progress : 0,
                 duration : 77,
                 filesize : 99,
-                message : 'No message'
+                message : 'No message',
+                format : formats[0],
+                master_id : job.job_id
             };
-            Job.add_tcd_job(job.job_id, formats[0], tcd_job_data);
-            it('job should have one transcoder job', function() {
-                job.tcd_job.length.should.equal(1);
+            var tcd_job = TCD.create_tcd(tcd_job_data);
+            it('should match creation data', function(done) {
+                validate_tcd_job(tcd_job, tcd_job_data);
+                done();
             });
-            var tcd_job = job.tcd_job[0];
-            validate_tcd_job(job.tcd_job[0], tcd_job_data, 1);
         });
-        describe('Update transcoder job', function() {
-            var new_tcd_job_data = {
-                job_id : 'abcdefgh',
-                status : 'mynewstatus',
-                progress : 0.3,
-                duration : 78,
-                filesize : 98,
-                message : 'I have a message'
-            };
-            Job.update_tcd_job(job.job_id, new_tcd_job_data);
-            var newjob = Job.get(job.job_id);
-            validate_tcd_job(newjob.tcd_job[0], new_tcd_job_data, 1);
-        });
+        //describe('Update transcoder job', function() {
+        //    var new_tcd_job_data = {
+        //        id : 'abcdefgh',
+        //        status : 'mynewstatus',
+        //        progress : 0.3,
+        //        duration : 78,
+        //        filesize : 98,
+        //        message : 'I have a message'
+        //    };
+        //    TCD.update_tcd(new_tcd_job_data);
+        //    //var newjob = Job.get(job.job_id);
+        //    //validate_tcd_job(newjob.tcd_job[0], new_tcd_job_data, 1);
+        //});
     });
 });
 
