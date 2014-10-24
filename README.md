@@ -1,6 +1,6 @@
 # Codem-client
 
-![Screenshot of codem-manager](/screenshots/transcoder.png?raw=true "Screenshot")
+![Screenshot of codem-manager](/codem-manager/screenshots/transcoder.png?raw=true "Screenshot")
 
 * http://github.com/Eyevinn/codem-client
 
@@ -23,7 +23,7 @@ path NFS mounted on the same local path. This, since the manager will request
 the node to put its output in that directory.
 
 The codem-manager makes use of MongoDB for persistance of transcoder job information.
-The MongoDB URL is hardcoded to mongodb://localhost/codem, and upon failure to connect
+The MongoDB URL is hardcoded to `mongodb://localhost/codem`, and upon failure to connect
 to this, codem-manager will fall back on keeping jobs in memory. Only difference compared to
 using MongoDB is that the information will be lost upon restart of codem-manager.
 
@@ -43,16 +43,16 @@ MongoDB (for storing transcoder job information)
 ## Installation
 Install by using npm (http://npmjs.org/):
 
-    # npm install codem-manager
-    # npm install codem-frontend
-    # npm install codem-watcher (depracated)
+    npm install codem-manager
+    npm install codem-frontend
+    npm install codem-watcher (depracated)
 
 Use the `-g` option to install it globally
 
-To start the programs, find where ´npm´ installs your packages and this script. Then run
+To start the programs, find where npm installs your packages and this script. Then run
 
-    # /PATH/TO/MANAGER/bin/codem-manager
-    # /PATH/TO/CODEMFRONTEND/bin/codem-frontend
+    /PATH/TO/MANAGER/bin/codem-manager
+    /PATH/TO/CODEMFRONTEND/bin/codem-frontend
 
 ## Configuration
 
