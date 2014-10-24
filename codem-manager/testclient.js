@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 var request = require('request');
 
-var job = {  source      : '/Users/fred/trailer.mp4'
-            ,removesource: 1
-           // source      : 'http://localhost:8099/download/trailer.mp4'
-           , formats     : [ '720p', '360p' ]
-           , destination : 'http://localhost:8099/upload/'}; //destination currently ignored
+var job = {  source      : 'http://localhost:8099/trailer.mp4',
+             removesource: 0,
+             formats     : [ '270p', '360p' ] };
 
-request({method: 'POST', url: 'http://localhost:8099/jobs', form: JSON.stringify(job)}
-        , function(err, res, body) {
+request({method: 'POST', 
+         url: 'http://localhost:8099/jobs', 
+         form: job},
+         function(err, res, body) {
             console.log('I got answer ' + body);
         });

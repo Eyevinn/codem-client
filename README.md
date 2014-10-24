@@ -1,14 +1,12 @@
 # Codem-client
 
+![Screenshot of codem-manager](/screenshots/transcoder.png?raw=true "Screenshot")
+
 * http://github.com/Eyevinn/codem-client
 
 ## Description
 
 Some clients for codem-transcode (http://github.com/madebyhiro/codem-transcode):
-
-### codem-watcher 
-
-Watching a directory and calling codem-transcode when new .mp4-files appear.
 
 ### codem-manager
 
@@ -18,19 +16,43 @@ nodes for their status. Then it deploys the job on the node having most number
 of free slots.
 
 Naturally, each transcoder node needs to have a running instance of
-codem-transcode.
+codem-transcode (can be installed with `npm install codem-transcode`).
 
 Currently, the transcoder node MUST have the codem managers `localdestination`
 path NFS mounted on the same local path. This, since the manager will request
 the node to put its output in that directory.
 
+The codem-manager makes use of MongoDB for persistance of transcoder job information.
+The MongoDB URL is hardcoded to mongodb://localhost/codem, and upon failure to connect
+to this, codem-manager will fall back on keeping jobs in memory. Only difference compared to
+using MongoDB is that the information will be lost upon restart of codem-manager.
+
+### codem-watcher 
+
+(depracated and now included in codem-manager)
+Watching a directory and calling codem-transcode when new .mp4-files appear.
+
+### codem-frontend 
+
+A web frontend to a codem-transcode node.
+
 ## Requirements
 node.js
+MongoDB (for storing transcoder job information)
 
 ## Installation
 Install by using npm (http://npmjs.org/):
 
-    `npm install codem-client`
+    # npm install codem-manager
+    # npm install codem-frontend
+    # npm install codem-watcher (depracated)
+
+Use the `-g` option to install it globally
+
+To start the programs, find where ´npm´ installs your packages and this script. Then run
+
+    # /PATH/TO/MANAGER/bin/codem-manager
+    # /PATH/TO/CODEMFRONTEND/bin/codem-frontend
 
 ## Configuration
 
@@ -79,7 +101,7 @@ The codem-manager takes a configuration file as argument with the -c flag. Examp
     * `directory` The directory to watch
     * `profiles` Which profiles to use for transcoding (see profiles below)
     * `removesource` If true - source file is removed after completed transcodings
-* `localdestination`  The local destination directory (must be NFS-mounted by the transcoder nodes).
+* `localdestination`  The local destination directory (the NFS mounted path on the manager host).
 * `port` The port on which the manager listens (both for clients and transcoder nodes).
 * `transcoderapi` Configuration of transcoder nodes.
     * `manager` The host name or IP address on which the nodes can reach the manager.
@@ -95,9 +117,12 @@ The codem-manager takes a configuration file as argument with the -c flag. Examp
 ## Usage
 
 The HTTP API of codem-manager is as follows:
+### POST /jobs
 
-Request: `POST /jobs`
-    { source : "http://my.source.com/sample.mp4",
+Doing a POST to http://hostname/jobs with JSON data
+
+    { 
+      source : "http://example.com/sample.mp4",
       removesource : 0,
       formats     : [720p, 360p]
     }
@@ -109,6 +134,10 @@ Responses:
 source can be either a local path on the manager's disk, or a HTTP URL.
 Currently the codem-manager only transcodes to the `localdestination` path configured in the codem-manager.
 If removesource is set to a true value and source is on a local disk, the source file will be deleted when all transcodings have completed.
+
+### GET /
+
+Displays a HTML formatted page listing current and previous transcoder jobs, as shown in screenshot above.
 
 ## License
 Codem-client is released under the MIT license.
