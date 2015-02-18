@@ -60,7 +60,7 @@ var config = {
                   height: 270,
                   video: '400000',
                   audio: '64000',
-                  options: '-codec:v libx264 -threads 1 -s 284x160 -profile:v baseline -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 400k -bufsize 800k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 128k'
+                  options: '-codec:v libx264 -threads 1 -s 284x160 -profile:v baseline -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 400k -bufsize 800k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 96k'
               }
     }
 };
