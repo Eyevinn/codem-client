@@ -46,21 +46,21 @@ var config = {
                   height: 540,
                   video: '3500000',
                   audio: '96000',
-                  options: '-threads 1 -s 960x540 -strict experimental -acodec aac -ab 96k -ac 2 -ar 48000 -vcodec libx264 -preset veryfast -tune film -x264opts keyint=75:min -keyint=75 -crf 16 -maxrate 3500k -bufsize 7000k -vprofile main'
+                  options: '-codec:v libx264 -threads 1 -s 960x540 -profile:v main -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 3500k -bufsize 7000k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 128k'
               },
         '360p': {
                   width: 640,
                   height: 360,
                   video: '1200000',
                   audio: '64000',
-                  options: '-threads 1 -s 640x360 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -preset veryfast -tune film -x264opts keyint=75:min -keyint=75 -crf 16 -maxrate 1200k -bufsize 2400k -vprofile baseline'
+                  options: '-codec:v libx264 -threads 1 -s 640x360 -profile:v baseline -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 1200k -bufsize 2400k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 96k'
               },
         '270p': {
                   width: 480,
                   height: 270,
                   video: '400000',
                   audio: '64000',
-                  options: '-threads 1 -s 284x160 -strict experimental -acodec aac -ab 64k -ac 2 -ar 48000 -vcodec libx264 -preset veryfast -tune film -x264opts keyint=75:min -keyint=75 -crf 16 -maxrate 400k -bufsize 800k -vprofile baseline'
+                  options: '-codec:v libx264 -threads 1 -s 284x160 -profile:v baseline -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 400k -bufsize 800k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 128k'
               }
     }
 };
