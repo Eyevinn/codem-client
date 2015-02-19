@@ -1,5 +1,6 @@
 var config = require('./config').load();
 var chokidar = require('chokidar');
+var fs = require('fs');
 var watcher = chokidar.watch(config['watch']['directory'],
         {ignored: /[\/\\]\./, persistent: true, ignoreInitial: true});
 
@@ -16,6 +17,12 @@ function tick() {
                     // File is probably growing. We need to wait for the complete file
                     return;
                 }
+                var size = fs.statSync(p).size;
+                if (size != incomingfiles[p].size) {
+                    console.log("File " + p + " has size " + size + " and still growing.");
+                    incomingfiles[p].size = size;
+                    return;
+                }
                 incomingfiles[p].processed = true;
                 processfile(p, probedata);
             });
@@ -23,12 +30,13 @@ function tick() {
     }
 }
 
-var timer = setInterval(tick, 1000);
+var timer = setInterval(tick, 5000);
 
 watcher.on('add', function(path) {
     if (path.match(/\.mp4$/)) {
         incomingfiles[path] = {
-            "processed": false
+            "processed": false,
+            "size" : 0
         };
     } else {
         console.log("Ignoring file with no .mp4 suffix");
