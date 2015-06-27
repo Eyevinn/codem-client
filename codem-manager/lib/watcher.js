@@ -33,13 +33,13 @@ function tick() {
 var timer = setInterval(tick, 5000);
 
 watcher.on('add', function(path) {
-    if (path.match(/\.mp4$/)) {
+    if (path.match(/\.(mp4|mov)$/i)) {
         incomingfiles[path] = {
             "processed": false,
             "size" : 0
         };
     } else {
-        console.log("Ignoring file with no .mp4 suffix");
+        console.log("Ignoring file with no .mp4 or .mov suffix");
     }
 })
 

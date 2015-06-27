@@ -93,9 +93,10 @@ processPostedJob = function(post, callback) {
 
     var localsource;
     var localdest =  config.localdestination + '/';
+    var basename;
+    var suffix;
     if (post.source.match(/^http/)) {
         var getsource = request(post.source);
-        var basename;
         getsource.on('response', function(res) { 
             log(res.headers);
             var contentdisp = res.headers['content-disposition'];
@@ -123,16 +124,29 @@ processPostedJob = function(post, callback) {
         });
     } else { //TODO Check the existence of localsource
         localsource = post.source;
-        var regmatch = localsource.match(/([^.\/]+)\.(mp4|MP4)$/);
+        var regmatch = localsource.match(/([^.\/]+)\.(mp4|mov)$/i);
         basename = regmatch[1];
+        suffix = regmatch[2];
         localdest += basename + '/';
         mkdirSync(localdest);
-        var orig = localdest + '/' + basename + '_orig.mp4'
-        log('Copying source to ' + orig);
-        fs.copy(localsource, orig, function(err) {
-            // XXX What if error?
-            job.setOriginalCopy(orig);
-        });
+        var orig = localdest + '/' + basename + '_orig.mp4';
+        if (suffix.match(/mp4/i)) {
+            log('Copying source to ' + orig);
+            fs.copy(localsource, orig, function(err) {
+                // XXX What if error?
+                job.setOriginalCopy(orig);
+            });
+        } else if (suffix.match(/mov/i)) {
+            // XXX We assume that video codec is h264
+            var codem_job = {'job_id'            : job.job_id
+                             ,'format'           : "orig"
+                             ,'source_file'      : localsource
+                             ,'destination_file' : orig
+                             ,'callback_urls'    : [ 'http://' + config.transcoderapi.manager + ':' + config.port + '/codem_notify' ]
+                             ,'encoder_options'  : "-codec:v copy -codec:a aac -strict -2 -b:a 240k" };
+            jobqueue.push(codem_job);
+            // TODO Can we remove the source file?
+        }
         createSMIL(localsource, basename, localdest, post.formats);
         enqueJobs({'job_id'           : job.job_id
                    ,'source_file'     : localsource 
