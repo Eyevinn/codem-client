@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2014 Exceeds Your Expecations Vinn AB
+Copyright (c) 2014 Exceeds Your Expectations Vinn AB
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@ var express = require('express')
    ,request = require('request')
    ,     fs = require('fs-extra')
    , FastList = require('fast-list')
-   ,builder = require('xmlbuilder')
    ,   uuid = require('node-uuid')
    ,  Model = require('./job')
    ,watcher = require('./watcher');
@@ -93,6 +92,7 @@ processPostedJob = function(post, callback) {
 
     var localsource;
     var localdest =  config.localdestination + '/';
+    job.setDestination(localdest);
     var basename;
     var suffix;
     if (post.source.match(/^http/)) {
@@ -115,7 +115,6 @@ processPostedJob = function(post, callback) {
             res.pipe(fs.createWriteStream(localsource));
         });
         getsource.on('end', function(){
-            createSMIL(localsource, basename, localdest, post.formats);
             enqueJobs({'job_id'           : job.job_id
                        ,'source_file'     : localsource 
                        ,'destination_dir' : localdest
@@ -136,18 +135,9 @@ processPostedJob = function(post, callback) {
                 // XXX What if error?
                 job.setOriginalCopy(orig);
             });
-        } else if (suffix.match(/mov/i)) {
-            // XXX We assume that video codec is h264
-            var codem_job = {'job_id'            : job.job_id
-                             ,'format'           : "orig"
-                             ,'source_file'      : localsource
-                             ,'destination_file' : orig
-                             ,'callback_urls'    : [ 'http://' + config.transcoderapi.manager + ':' + config.port + '/codem_notify' ]
-                             ,'encoder_options'  : "-codec:v copy -codec:a aac -strict -2 -b:a 240k" };
-            jobqueue.push(codem_job);
-            // TODO Can we remove the source file?
+            post.formats.splice(post.formats.indexOf('orig'),1);
         }
-        createSMIL(localsource, basename, localdest, post.formats);
+        job.setBasename(basename);
         enqueJobs({'job_id'           : job.job_id
                    ,'source_file'     : localsource 
                    ,'destination_dir' : localdest
@@ -225,57 +215,3 @@ exports.processPostedJob = processPostedJob;;
 exports.getCodemNotification = getCodemNotification;
 exports.noOfFreeSlots = noOfFreeSlots;
 
-//------ SMIL creation ---------------------------------------------------------
-
-function getSourceData(probedata) {
-    var srcdata = {
-        "ext": probedata['fileext']  
-    };
-    if (probedata['metadata']) {
-        srcdata['title'] = probedata['metadata']['title'];
-    }
-    for (i = 0; i < probedata['streams'].length; i++) {
-        var stream = probedata['streams'][i];
-        if (stream['codec_type'] == 'video') {
-            srcdata['width'] = stream['width'];
-            srcdata['height'] = stream['height'];
-            srcdata['videobitrate'] = stream['bit_rate'];
-        } else if (stream['codec_type'] == 'audio') {
-            srcdata['audiobitrate'] = stream['bit_rate'];
-        }
-    }
-    return srcdata;
-} 
-
-function createSMIL(localsource,basename,destpath, formats) {
-    var probe = require('node-ffprobe');
-    probe(localsource, function(err, probedata) {
-        var srcdata = getSourceData(probedata);
-        var root = builder.create('smil', {version: '1.0', encoding: 'UTF-8', standalone: true}); 
-        root.att('title', srcdata['title'] || basename);
-
-        var rootsw = root.ele('body').ele('switch');
-        var el = rootsw.ele('video', {'height': srcdata['height'], 
-                                      'width': srcdata['width'], 
-                                      'src': basename + '/' + basename + '_orig.mp4'});
-        el.ele('param', {'name': 'videoBitrate', 'value': srcdata['videobitrate'], 'valuetype': 'data'});
-        el.ele('param', {'name': 'audioBitrate', 'value': srcdata['audiobitrate'], 'valuetype': 'data'});
-
-        var i;
-        for (i=0;i<formats.length; i++) {
-            var key = formats[i];
-            var p = config.profile[key];
-            var h = p['height'];
-            var w = p['width'];
-            var src = basename + '/' + basename + '_' + key + '.mp4';
-            var vb = p['video'];
-            var ab = p['audio'];
-
-            el = rootsw.ele('video', {'height': h, 'width': w, 'src': src});
-            el.ele('param', {'name': 'videoBitrate', 'value': vb, 'valuetype': 'data'});
-            el.ele('param', {'name': 'audioBitrate', 'value': ab, 'valuetype': 'data'});
-        }      
-        var smilxml = rootsw.end({ pretty: true });
-        fs.writeFile(destpath + '/../' + basename + ".smil", smilxml);
-    });
-}

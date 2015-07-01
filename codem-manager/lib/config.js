@@ -29,7 +29,7 @@ var fs = require('fs');
 var config = {
     watch: {
                directory : '/tmp/incoming',
-               profiles : [ '540p', '360p', '270p'],
+               profiles : [ 'orig', '540p', '360p', '160p'],
                removesource : 1 },
     localdestination: '/tmp/',
     port: 8099,
@@ -41,6 +41,13 @@ var config = {
             ] 
     },
     profile: {
+        'orig': {
+                  width: 1280,
+                  height: 720,
+                  video: '3500000',
+                  audio: '96000',
+                  options: '-codec:v libx264 -threads 1 -s 1280x720 -profile:v main -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 6000k -bufsize 12000k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 240k'
+              },
         '540p': {
                   width: 960,
                   height: 540,
@@ -55,7 +62,7 @@ var config = {
                   audio: '64000',
                   options: '-codec:v libx264 -threads 1 -s 640x360 -profile:v baseline -preset veryfast -crf 16 -g 75 -keyint_min 75 -maxrate 1200k -bufsize 2400k -vf scale=-1:480 -threads 0 -codec:a  aac -strict -2  -b:a 96k'
               },
-        '270p': {
+        '160p': {
                   width: 480,
                   height: 270,
                   video: '400000',

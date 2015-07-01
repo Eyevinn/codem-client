@@ -1,5 +1,6 @@
 var uuid = require('node-uuid'),
     fs = require('fs'),
+    smil = require('./smil'),
     mongoose = require('mongoose');
 
 var db = mongoose.connection;
@@ -24,7 +25,9 @@ var jobSchema = mongoose.Schema({
     source : String,
     removesource : Boolean,
     originalCopy : String,
-    formats : [ String ],
+    destination : String,
+    basename : String,
+    formats : [ String ]
 });
 
 // Job class (static) methods --------------------------------------------------
@@ -62,6 +65,18 @@ jobSchema.statics.getJobs = function(callback) {
 
 jobSchema.methods.setOriginalCopy = function(path) {
     this.originalCopy = path;
+    this.save();
+    return this;
+}
+
+jobSchema.methods.setDestination = function(path) {
+    this.destination = path;
+    this.save();
+    return this;
+}
+
+jobSchema.methods.setBasename = function(name) {
+    this.basename = name;
     this.save();
     return this;
 }
@@ -142,8 +157,12 @@ tcd_jobSchema.methods.update_tcd = function(data, callback) {
     this.message = data.message;
     this.save();
     var job = jobs[this.master_id];
-    if (job.isDone() && job.removesource)
-        job.remove_source();
+    if (job.isDone()) {
+        if (job.removesource) {
+            job.remove_source();
+        }
+        smil.writeSMIL(job.destination, job.basename);
+    }
     if (callback)
         callback();
 }
