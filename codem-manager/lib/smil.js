@@ -44,8 +44,9 @@ function createSMIL(basepath, basename, files, err, success) {
         var root = builder.create('smil', {version: '1.0', encoding: 'UTF-8', standalone: true}); 
         root.att('title', basename);
         var rootsw = root.ele('body').ele('switch');
+        arr = arr.map(pickProbeData).sort(function(a,b){return b.width - a.width;});
         for (var i in arr) {
-            var srcdata = pickProbeData(arr[i]);
+            var srcdata = arr[i];
             var el = rootsw.ele('video', {height: srcdata.height, 
                                           width: srcdata.width, 
                                           src: srcdata.file.replace(basepath+'/','')});
