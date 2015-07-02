@@ -157,11 +157,13 @@ tcd_jobSchema.methods.update_tcd = function(data, callback) {
     this.message = data.message;
     this.save();
     var job = jobs[this.master_id];
+    if (this.status == 'success') {
+        smil.writeSMIL(job.destination, job.basename);
+    }
     if (job.isDone()) {
         if (job.removesource) {
             job.remove_source();
         }
-        smil.writeSMIL(job.destination, job.basename);
     }
     if (callback)
         callback();

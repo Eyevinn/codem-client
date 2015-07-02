@@ -25,6 +25,7 @@ THE SOFTWARE.
 var express = require('express')
    ,request = require('request')
    ,     fs = require('fs-extra')
+   ,   path = require('path')
    , FastList = require('fast-list')
    ,   uuid = require('node-uuid')
    ,  Model = require('./job')
@@ -72,6 +73,15 @@ var mkdirSync = function (path) {
     } catch(e) {
         if ( e.code != 'EEXIST' ) throw e;
     }
+}
+
+function exists(path) {
+    try {
+        fs.statSync(path);
+    } catch(e) {
+        return false;
+    }
+    return true;
 }
 
 function getJobs(callback) {
@@ -126,10 +136,23 @@ processPostedJob = function(post, callback) {
         var regmatch = localsource.match(/([^.\/]+)\.(mp4|mov)$/i);
         basename = regmatch[1];
         suffix = regmatch[2];
-        localdest += basename + '/';
+        localdest = path.join(localdest,basename);
+
+        // Check for already existing path //////////////////
+        var newpath = localdest;
+        var duplicates = 1;
+        while (exists(newpath)) {
+            newpath = localdest + ++duplicates;
+        }
+        if (duplicates>1) {
+            localdest = newpath;
+            basename += duplicates;
+        }
+        /////////////////////////////////////////////////////
+
         mkdirSync(localdest);
-        var orig = localdest + '/' + basename + '_orig.mp4';
         if (suffix.match(/mp4/i)) {
+            var orig = path.join(localdest, basename + '_orig.mp4');
             log('Copying source to ' + orig);
             fs.copy(localsource, orig, function(err) {
                 // XXX What if error?
@@ -160,7 +183,8 @@ enqueJobs = function(jobinfo) {
         var codem_job = {'job_id'            : jobinfo.job_id
                          ,'format'           : formats[i]
                          ,'source_file'      : jobinfo.source_file
-                         ,'destination_file' : jobinfo.destination_dir + jobinfo.file_basename + '_' + formats[i] + '.mp4'
+                         ,'destination_file' : path.join(jobinfo.destination_dir,
+                                                         jobinfo.file_basename + '_' + formats[i] + '.mp4')
                          ,'callback_urls'    : [ 'http://' + config.transcoderapi.manager + ':' + config.port + '/codem_notify' ]
                          ,'encoder_options'  : encoder_options };
         jobqueue.push(codem_job);
