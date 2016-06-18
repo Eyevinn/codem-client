@@ -194,24 +194,25 @@ function postCodemJob(tcd) {
     if (tcdStatus[tcd].free_slots <= 0) {
         return;
     }
-    log('Sending to ' + tcd + ' which now has ' + tcdStatus[tcd].free_slots + ' free slots.');
+    var job = jobqueue.shift();
+    log('Sending job',job,' to ' + tcd + ' which now has ' + tcdStatus[tcd].free_slots + ' free slots.');
     request({  
         method : 'POST',
         url    : tcd,
-        form   : JSON.stringify(jobqueue[0]) } ,
+        form   : JSON.stringify(job) } ,
         function(err, res, body) {
             if (err) {
                 log("Error on job post:", err);
             } else {
+                log("Answer on job post", body);
                 try {
-                    var job = jobqueue.shift();
                     var codemjob = JSON.parse(body);
                     codemjob.format = job.format;
                     codemjob.master_id = job.job_id;
                     log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
                     TCD.create_tcd(codemjob);
                 } catch(e) {
-                    log("Error on codem response parsing", e);
+                    log("Error on job post", e);
                 }
             }
         });
