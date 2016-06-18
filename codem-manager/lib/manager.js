@@ -231,7 +231,7 @@ function getFreeTranscoder() {
 
 function handleJobQueue(responses) {
     var tcd;
-    while (jobqueue.length && (tcd=getFreeTranscoder()) {
+    while (jobqueue.length && (tcd=getFreeTranscoder())) {
         postCodemJob(jobqueue[0], tcd);
     }
 }
