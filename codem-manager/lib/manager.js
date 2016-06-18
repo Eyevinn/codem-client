@@ -39,9 +39,7 @@ var server = null;
 var jobqueue = new FastList();
 var tcdStatus = {};
 
-var log = function(args) {
-    console.log(args);
-}
+var log = console.log;
 
 //------ getCodemNotification --------------------------------------------------
 getCodemNotification = function(codemdata, callback) {
@@ -192,18 +190,30 @@ enqueJobs = function(jobinfo) {
 }
 
 //------ Queue polling ---------------------------------------------------------
-function postCodemJob(job,tcd) {
+function postCodemJob(tcd) {
+    if (tcdStatus[tcd].free_slots <= 0) {
+        return;
+    }
     log('Sending to ' + tcd + ' which now has ' + tcdStatus[tcd].free_slots + ' free slots.');
     request({  
         method : 'POST',
         url    : tcd,
-        form   : JSON.stringify(job) } ,
+        form   : JSON.stringify(jobqueue[0]) } ,
         function(err, res, body) {
-            var codemjob = JSON.parse(body);
-            codemjob.format = job.format;
-            codemjob.master_id = job.job_id;
-            log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
-            TCD.create_tcd(codemjob);
+            if (err) {
+                log("Error on job post:", err);
+            } else {
+                try {
+                    var job = jobqueue.shift();
+                    var codemjob = JSON.parse(body);
+                    codemjob.format = job.format;
+                    codemjob.master_id = job.job_id;
+                    log("Started codem job " + codemjob.job_id + " belonging to job " + job.job_id);
+                    TCD.create_tcd(codemjob);
+                } catch(e) {
+                    log("Error on codem response parsing", e);
+                }
+            }
         });
 }
 
@@ -220,9 +230,9 @@ function getFreeTranscoder() {
 }
 
 function handleJobQueue(responses) {
-    var job,tcd;
-    while ((tcd=getFreeTranscoder()) && (job=jobqueue.shift())) {
-        postCodemJob(job, tcd);
+    var tcd;
+    while (jobqueue.length && (tcd=getFreeTranscoder()) {
+        postCodemJob(jobqueue[0], tcd);
     }
 }
 
