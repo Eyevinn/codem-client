@@ -21,7 +21,7 @@
     "nib": "1.0.*",
     "node-ffprobe": ">= 1.2.2",
     "node-uuid": "1.4.*",
-    "request": ">= 2.40.0",
+    "request": "2.40.0",
     "stylus": "0.49.*",
     "xmlbuilder": "2.4.4"
   },
