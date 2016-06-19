@@ -146,7 +146,11 @@ tcd_jobSchema.statics.create_tcd = function(data) {
 // Only three fields are updateable
 tcd_jobSchema.statics.update_tcd = function(data, callback) {
     var tcd_job = tcd_jobs[data.id] || tcd_jobs[data.job_id];
-    tcd_job.update_tcd(data,callback);
+    if (tcd_job) {
+        tcd_job.update_tcd(data,callback);
+    } else {
+        callback();
+    }
 }
 
 //---TCD instance methods ------------------------------------------------------

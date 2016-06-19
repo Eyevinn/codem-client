@@ -203,6 +203,7 @@ function postCodemJob(tcd) {
         function(err, res, body) {
             if (err) {
                 log("Error on job post:", err);
+                jobqueue.push(job); // Push back on queue
             } else {
                 log("Answer on job post", body);
                 try {
@@ -213,6 +214,7 @@ function postCodemJob(tcd) {
                     TCD.create_tcd(codemjob);
                 } catch(e) {
                     log("Error on job post", e);
+                    jobqueue.push(job); // Push back on queue
                 }
             }
         });
