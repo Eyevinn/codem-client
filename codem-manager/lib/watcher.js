@@ -10,21 +10,23 @@ var probe = require('node-ffprobe');
 var incomingfiles = {};
 
 function tick() {
+    var p;
     for (p in incomingfiles) {
         if (!incomingfiles[p].processed) {
             probe(p, function(err, probedata) {
+                var file = probedata.file;
                 if (err) {
                     // File is probably growing. We need to wait for the complete file
                     return;
                 }
-                var size = fs.statSync(p).size;
-                if (size != incomingfiles[p].size) {
-                    console.log("File " + p + " has size " + size + " and still growing.");
-                    incomingfiles[p].size = size;
+                var size = fs.statSync(file).size;
+                if (size != incomingfiles[file].size) {
+                    console.log("File " + file + " has size " + size + " and still growing.");
+                    incomingfiles[file].size = size;
                     return;
                 }
-                incomingfiles[p].processed = true;
-                processfile(p, probedata);
+                incomingfiles[file].processed = true;
+                processfile(probedata);
             });
         }
     }
@@ -43,8 +45,8 @@ watcher.on('add', function(path) {
     }
 })
 
-function processfile(path, probedata) {
-    var job = { source       : path
+function processfile(probedata) {
+    var job = { source       : probedata.file
                ,removesource : config.watch.removesource
                ,formats      : config.watch.profiles };
     
