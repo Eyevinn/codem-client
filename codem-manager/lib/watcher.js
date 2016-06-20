@@ -14,11 +14,12 @@ function tick() {
     for (p in incomingfiles) {
         if (!incomingfiles[p].processed) {
             probe(p, function(err, probedata) {
-                var file = probedata.file;
-                if (err) {
+                if (err || !probedata || !probedata.file) {
                     // File is probably growing. We need to wait for the complete file
+                    console.log("ffprobe error:",err);
                     return;
                 }
+                var file = probedata.file;
                 var size = fs.statSync(file).size;
                 if (size != incomingfiles[file].size) {
                     console.log("File " + file + " has size " + size + " and still growing.");
