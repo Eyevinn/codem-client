@@ -55,7 +55,12 @@ function getTranscoderStatus(callback) {
             if (err) {
                 log(err);
             } else {
-                responses[res.request.href] = JSON.parse(res.body);
+                try {
+                    var responseBody = res.body;
+                    responses[res.request.href] = JSON.parse(responseBody);
+                } catch(e) {
+                    console.log("getTranscoderStatus error",responseBody,e);
+                }
             }
             if (++gotten == transcoders.length) { //All answers are in
                 tcdStatus = responses; //TODO Update jobs variable from this info
